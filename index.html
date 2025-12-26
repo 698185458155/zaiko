@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>在庫管理</title>
+    <title>家族で共有・在庫管理</title>
     <style>
-        /* iPhoneアプリっぽく見せるためのデザイン設定 */
         :root {
-            --primary-color: #007AFF; /* iPhone Blue */
+            --primary-color: #007AFF;
             --bg-color: #F2F2F7;
             --card-bg: #FFFFFF;
             --danger-color: #FF3B30;
@@ -17,123 +16,39 @@
             background-color: var(--bg-color);
             margin: 0;
             padding: 0;
-            padding-bottom: 80px; /* 下部メニュー用スペース */
-            color: #333;
+            padding-bottom: 80px;
         }
-        h1, h2 { margin: 0; padding: 15px; text-align: center; background: #fff; border-bottom: 1px solid #ddd; }
-        
-        /* 入力フォームエリア */
-        .input-area {
-            background: var(--card-bg);
-            padding: 15px;
-            margin: 15px;
-            border-radius: 12px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        h1 { margin: 0; padding: 15px; text-align: center; background: #fff; border-bottom: 1px solid #ddd; font-size: 20px; }
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8); display: none; justify-content: center; align-items: center; z-index: 1000;
         }
-        input, select, button {
-            font-size: 16px;
-            padding: 10px;
-            margin-bottom: 10px;
-            width: 100%;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-        }
-        button.add-btn {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            font-weight: bold;
-        }
-
-        /* アイテムリストのデザイン */
-        .category-header {
-            padding: 10px 20px;
-            color: #666;
-            font-size: 14px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .item-card {
-            background: var(--card-bg);
-            padding: 15px;
-            margin: 0 15px 10px 15px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
+        .input-area { background: var(--card-bg); padding: 15px; margin: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        input, select, button { font-size: 16px; padding: 10px; margin-bottom: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; }
+        button.add-btn { background-color: var(--primary-color); color: white; border: none; font-weight: bold; }
+        .category-header { padding: 10px 20px; color: #666; font-size: 14px; font-weight: bold; }
+        .item-card { background: var(--card-bg); padding: 15px; margin: 0 15px 10px 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .item-info { flex-grow: 1; }
         .item-name { font-weight: bold; font-size: 18px; display: block; }
         .item-meta { font-size: 12px; color: #888; margin-top: 4px; }
-        
-        /* 数量操作ボタン */
-        .qty-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .qty-btn {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            border: 1px solid #007AFF;
-            background: white;
-            color: #007AFF;
-            font-size: 20px;
-            line-height: 1;
-            padding: 0;
-            cursor: pointer;
-        }
+        .qty-controls { display: flex; align-items: center; gap: 10px; }
+        .qty-btn { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #007AFF; background: white; color: #007AFF; font-size: 20px; cursor: pointer; }
         .qty-display { font-size: 18px; font-weight: bold; min-width: 30px; text-align: center; }
-
-        /* お買い物リストで在庫切れを目立たせる */
-        .shopping-alert {
-            color: var(--danger-color);
-            font-weight: bold;
-        }
-
-        /* 下部ナビゲーション */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: rgba(255,255,255,0.95);
-            display: flex;
-            border-top: 1px solid #ccc;
-            height: 60px;
-            backdrop-filter: blur(10px);
-        }
-        .nav-btn {
-            flex: 1;
-            border: none;
-            background: none;
-            font-size: 12px;
-            color: #999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+        .shopping-alert { color: var(--danger-color); font-weight: bold; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.95); display: flex; border-top: 1px solid #ccc; height: 60px; backdrop-filter: blur(10px); }
+        .nav-btn { flex: 1; border: none; background: none; font-size: 12px; color: #999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .nav-btn.active { color: var(--primary-color); }
-        .nav-icon { font-size: 24px; margin-bottom: 2px; }
-
-        /* 画面切り替え用 */
         .page { display: none; }
         .page.active { display: block; }
-
-        /* 削除ボタン */
-        .delete-btn {
-            background: none; border: none; color: #999; font-size: 12px; margin-top: 5px; text-decoration: underline;
-        }
+        .delete-btn { background: none; border: none; color: #999; font-size: 12px; margin-top: 5px; text-decoration: underline; width: auto; padding: 0; }
     </style>
 </head>
 <body>
 
+    <div id="loading" class="loading-overlay">更新中...</div>
+
     <div id="page-inventory" class="page active">
-        <h1>家の在庫</h1>
-        
+        <h1>家の在庫（共有中）</h1>
         <div class="input-area">
             <input type="text" id="newName" placeholder="商品名（例：ケチャップ）">
             <select id="newCategory">
@@ -146,181 +61,151 @@
                 <input type="number" id="newQty" placeholder="現在の個数" value="1">
                 <input type="number" id="newThreshold" placeholder="補充ライン" value="1">
             </div>
-            <input type="text" id="newExpiry" placeholder="期限 (任意: 2024/12/31)" onfocus="(this.type='date')" onblur="(this.type='text')">
+            <input type="text" id="newExpiry" placeholder="期限 (任意)" onfocus="(this.type='date')">
             <button class="add-btn" onclick="addItem()">追加する</button>
         </div>
-
-        <div id="inventory-list">
-            </div>
+        <div id="inventory-list"></div>
     </div>
 
     <div id="page-shopping" class="page">
         <h1>お買い物リスト</h1>
-        <div style="padding: 15px; text-align:center; color:#666; font-size:14px;">
-            残り個数が設定以下になったものが<br>ここに表示されます。
-        </div>
-        <div id="shopping-list">
-            </div>
+        <div id="shopping-list"></div>
     </div>
 
     <div class="bottom-nav">
-        <button class="nav-btn active" onclick="switchPage('inventory', this)">
-            <span class="nav-icon">📦</span>
-            在庫一覧
-        </button>
-        <button class="nav-btn" onclick="switchPage('shopping', this)">
-            <span class="nav-icon">🛒</span>
-            買うもの
-        </button>
+        <button class="nav-btn active" onclick="switchPage('inventory', this)"><span>📦</span>在庫一覧</button>
+        <button class="nav-btn" onclick="switchPage('shopping', this)"><span>🛒</span>買うもの</button>
     </div>
 
     <script>
-        // データの保存場所（初期データ）
-        let items = JSON.parse(localStorage.getItem('stockApp_items')) || [];
+        // あなたが発行したGASのURL
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxdPk2pGgQiiGRjQ8xOdiqr38J5qV6Cz2Z3WJputeKg7GpVoROEErbipUdvcxEu4Tv_rw/exec";
+        
+        let items = [];
 
-        // 画面の初期表示
-        renderInventory();
-
-        // アイテムを追加する機能
-        function addItem() {
-            const name = document.getElementById('newName').value;
-            const category = document.getElementById('newCategory').value;
-            const qty = parseInt(document.getElementById('newQty').value);
-            const threshold = parseInt(document.getElementById('newThreshold').value);
-            const expiry = document.getElementById('newExpiry').value;
-
-            if (!name) { alert("商品名を入れてください"); return; }
-
-            const newItem = {
-                id: Date.now(), // ユニークなID
-                name: name,
-                category: category,
-                qty: qty,
-                threshold: threshold, // この数以下になったらお買い物リストへ
-                expiry: expiry
-            };
-
-            items.push(newItem);
-            saveData();
-            renderInventory();
-            
-            // 入力欄をクリア
-            document.getElementById('newName').value = '';
-            document.getElementById('newExpiry').value = '';
+        // 起動時にスプレッドシートからデータを読み込む
+        async function loadData() {
+            showLoading(true);
+            try {
+                const response = await fetch(GAS_URL);
+                items = await response.json();
+                renderInventory();
+            } catch (e) {
+                console.error("読み込み失敗", e);
+            }
+            showLoading(false);
         }
 
-        // 在庫リストを表示する機能
-        function renderInventory() {
-            const listContainer = document.getElementById('inventory-list');
-            listContainer.innerHTML = '';
+        // スプレッドシートにデータを保存する
+        async function saveData() {
+            showLoading(true);
+            try {
+                await fetch(GAS_URL, {
+                    method: "POST",
+                    body: JSON.stringify(items)
+                });
+            } catch (e) {
+                console.error("保存失敗", e);
+                alert("保存に失敗しました。電波の良い所で再度お試しください。");
+            }
+            showLoading(false);
+        }
 
-            // カテゴリごとにグループ化
-            const categories = ["冷蔵庫", "トイレ", "お風呂", "パントリー"];
-            
-            categories.forEach(cat => {
+        async function addItem() {
+            const name = document.getElementById('newName').value;
+            if (!name) return;
+            const newItem = {
+                id: Date.now(),
+                name: name,
+                category: document.getElementById('newCategory').value,
+                qty: parseInt(document.getElementById('newQty').value) || 0,
+                threshold: parseInt(document.getElementById('newThreshold').value) || 1,
+                expiry: document.getElementById('newExpiry').value
+            };
+            items.push(newItem);
+            renderInventory();
+            await saveData();
+            document.getElementById('newName').value = '';
+        }
+
+        async function changeQty(id, change) {
+            const item = items.find(i => i.id == id);
+            if (item) {
+                item.qty += change;
+                if (item.qty < 0) item.qty = 0;
+                renderInventory();
+                await saveData();
+            }
+        }
+
+        async function deleteItem(id) {
+            if(confirm('削除しますか？')) {
+                items = items.filter(i => i.id != id);
+                renderInventory();
+                await saveData();
+            }
+        }
+
+        function renderInventory() {
+            const list = document.getElementById('inventory-list');
+            list.innerHTML = '';
+            const cats = ["冷蔵庫", "トイレ", "お風呂", "パントリー"];
+            cats.forEach(cat => {
                 const catItems = items.filter(i => i.category === cat);
                 if (catItems.length > 0) {
-                    // カテゴリ名表示
-                    const catHeader = document.createElement('div');
-                    catHeader.className = 'category-header';
-                    catHeader.textContent = cat;
-                    listContainer.appendChild(catHeader);
-
-                    // アイテム表示
+                    list.innerHTML += `<div class="category-header">${cat}</div>`;
                     catItems.forEach(item => {
-                        const el = document.createElement('div');
-                        el.className = 'item-card';
-                        el.innerHTML = `
-                            <div class="item-info">
-                                <span class="item-name">${item.name}</span>
-                                <div class="item-meta">
-                                    補充ライン: ${item.threshold}個 / 期限: ${item.expiry || '--'}
+                        list.innerHTML += `
+                            <div class="item-card">
+                                <div class="item-info">
+                                    <span class="item-name">${item.name}</span>
+                                    <div class="item-meta">補充: ${item.threshold} / 期限: ${item.expiry || '--'}</div>
+                                    <button class="delete-btn" onclick="deleteItem(${item.id})">削除</button>
                                 </div>
-                                <button class="delete-btn" onclick="deleteItem(${item.id})">削除</button>
-                            </div>
-                            <div class="qty-controls">
-                                <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
-                                <span class="qty-display">${item.qty}</span>
-                                <button class="qty-btn" onclick="changeQty(${item.id}, 1)">＋</button>
-                            </div>
-                        `;
-                        listContainer.appendChild(el);
+                                <div class="qty-controls">
+                                    <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
+                                    <span class="qty-display">${item.qty}</span>
+                                    <button class="qty-btn" onclick="changeQty(${item.id}, 1)">＋</button>
+                                </div>
+                            </div>`;
                     });
                 }
             });
         }
 
-        // お買い物リストを表示する機能
         function renderShoppingList() {
-            const listContainer = document.getElementById('shopping-list');
-            listContainer.innerHTML = '';
-
-            // しきい値以下のアイテムを探す
+            const list = document.getElementById('shopping-list');
             const shoppingItems = items.filter(item => item.qty <= item.threshold);
-
-            if (shoppingItems.length === 0) {
-                listContainer.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">買うものはありません！</div>';
-                return;
-            }
-
+            list.innerHTML = shoppingItems.length ? '' : '<div style="text-align:center; padding:20px; color:#aaa;">買うものはありません</div>';
             shoppingItems.forEach(item => {
-                const el = document.createElement('div');
-                el.className = 'item-card';
-                // お買い物リストではカテゴリも表示
-                el.innerHTML = `
-                    <div class="item-info">
-                        <span class="item-name">${item.name}</span>
-                        <div class="item-meta">${item.category}</div>
-                    </div>
-                    <div style="text-align:right;">
-                        <span class="shopping-alert">残り ${item.qty}個</span><br>
-                        <span style="font-size:12px; color:#888;">(設定: ${item.threshold}個以下)</span>
-                    </div>
-                `;
-                listContainer.appendChild(el);
+                list.innerHTML += `
+                    <div class="item-card">
+                        <div class="item-info">
+                            <span class="item-name">${item.name}</span>
+                            <div class="item-meta">${item.category}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <span class="shopping-alert">残り ${item.qty}個</span>
+                        </div>
+                    </div>`;
             });
         }
 
-        // 数を変更する機能
-        function changeQty(id, change) {
-            const item = items.find(i => i.id === id);
-            if (item) {
-                item.qty += change;
-                if (item.qty < 0) item.qty = 0;
-                saveData();
-                renderInventory();
-            }
-        }
-
-        // 削除機能
-        function deleteItem(id) {
-            if(confirm('本当に削除しますか？')) {
-                items = items.filter(i => i.id !== id);
-                saveData();
-                renderInventory();
-            }
-        }
-
-        // データを保存する機能（ブラウザに保存）
-        function saveData() {
-            localStorage.setItem('stockApp_items', JSON.stringify(items));
-        }
-
-        // ページ切り替え機能
         function switchPage(pageId, btn) {
-            // ページ切り替え
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-' + pageId).classList.add('active');
-            
-            // ボタンのアクティブ化
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-
-            // お買い物リストを開いたときはリストを更新
-            if (pageId === 'shopping') {
-                renderShoppingList();
-            }
+            if (pageId === 'shopping') renderShoppingList();
+            if (pageId === 'inventory') loadData(); // ページ切り替え時に最新情報を読み込む
         }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'flex' : 'none';
+        }
+
+        // 起動時にデータを読み込む
+        loadData();
     </script>
 </body>
 </html>
