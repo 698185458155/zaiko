@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <link rel="apple-touch-icon" href="https://github.com/698185458155/zaiko/blob/main/IMG_6373.PNG">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Inventory Manager</title>
+    <title>Home Inventory</title>
+    
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/698185458155/zaiko/main/img_6373.png">
+    
     <style>
         :root {
             --primary-color: #007AFF;
@@ -31,6 +33,7 @@
             color: #333;
             border-bottom: 1px solid #ddd; 
         }
+        /* ...以下、デザインや機能のコードが続きます（前回の修正をすべて含んでいます）... */
         
         .input-area {
             background: var(--card-bg);
@@ -171,7 +174,7 @@
             </div>
             
             <span class="input-label">消費期限 (任意)</span>
-            <input type="text" id="newExpiry" placeholder="2024/12/31" onfocus="(this.type='date')" onblur="(this.type='text')">
+            <input type="text" id="newExpiry" placeholder="2025/12/31" onfocus="(this.type='date')" onblur="(this.type='text')">
             
             <button class="add-btn" onclick="addItem()">リストに追加</button>
         </div>
@@ -194,7 +197,7 @@
     </div>
 
     <script>
-        // データはブラウザのみに保存（外部送信なし）
+        // 外部送信なし・自分だけの保存
         let items = JSON.parse(localStorage.getItem('myStockData')) || [];
 
         function renderInventory() {
@@ -315,4 +318,3 @@
     </script>
 </body>
 </html>
-
