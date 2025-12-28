@@ -21,9 +21,18 @@
             margin: 0; padding: 0; padding-bottom: 80px;
         }
         h1 { 
-            margin: 0; padding: 20px; text-align: center; background: #fff; 
-            font-size: 22px; font-weight: 300; letter-spacing: 1px; color: #333;
-            border-bottom: 1px solid #ddd; 
+            margin: 0; padding: 15px; text-align: center; background: #fff; 
+            font-size: 20px; font-weight: 300; color: #333;
+        }
+
+        /* 検索窓 */
+        .search-container {
+            padding: 10px 15px; background: #fff; border-bottom: 1px solid #ddd;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .search-input {
+            width: 100%; padding: 8px 12px; border: none; background: #eee;
+            border-radius: 10px; font-size: 14px; box-sizing: border-box;
         }
         
         /* 入力エリア */
@@ -35,12 +44,13 @@
         input, select, button {
             font-size: 16px; padding: 10px; margin-bottom: 10px;
             width: 100%; box-sizing: border-box; border: 1px solid #ddd; border-radius: 8px;
+            display: block; /* 横ずれ防止 */
         }
         .flex-row { display: flex; gap: 8px; }
         .flex-item { flex: 1; }
         .add-btn { background-color: var(--primary-color); color: white; border: none; font-weight: bold; margin-top: 5px; }
 
-        /* カテゴリーヘッダー（折りたたみ用） */
+        /* カテゴリーヘッダー */
         .category-header {
             padding: 12px 20px; color: var(--text-secondary);
             font-size: 14px; font-weight: 600; cursor: pointer;
@@ -49,7 +59,7 @@
         .category-header::after { content: '▼'; font-size: 10px; transition: 0.3s; }
         .category-header.collapsed::after { content: '▶'; }
 
-        /* アイテムカード */
+        /* アイテムリスト */
         .item-list { display: block; }
         .item-list.collapsed { display: none; }
         
@@ -59,16 +69,12 @@
             align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .item-info { flex-grow: 1; }
-        .item-name { font-weight: bold; font-size: 17px; display: block; }
+        .item-name { font-weight: bold; font-size: 17px; color: #000; cursor: pointer; }
         .item-meta { font-size: 12px; color: #888; margin-top: 4px; line-height: 1.6; }
         
-        /* 期限編集用スタイル */
-        .editable-date {
-            border-bottom: 1px dashed var(--primary-color);
-            color: var(--primary-color);
-            padding: 2px 0;
-            cursor: pointer;
-        }
+        /* 編集可能テキスト */
+        .editable { border-bottom: 1px dashed #ccc; padding: 2px 0; }
+        .editable-date { color: var(--primary-color); border-color: var(--primary-color); }
         .expiry-alert { color: var(--danger-color) !important; font-weight: bold; border-color: var(--danger-color); }
 
         .qty-controls { display: flex; align-items: center; gap: 8px; }
@@ -102,9 +108,13 @@
     <div id="page-inventory" class="page active">
         <h1>Home Inventory</h1>
         
+        <div class="search-container">
+            <input type="text" id="searchBar" class="search-input" placeholder="🔍 名前や #タグ で絞り込み..." oninput="renderInventory()">
+        </div>
+
         <div class="input-area">
-            <span class="input-label">アイテム名</span>
-            <input type="text" id="newName" placeholder="例：醤油">
+            <span class="input-label">アイテム名 (タグを付けてもOK)</span>
+            <input type="text" id="newName" placeholder="例：醤油 #調味料">
             
             <span class="input-label">カテゴリー</span>
             <select id="newCategory">
@@ -151,38 +161,41 @@
 
     <script>
         let items = JSON.parse(localStorage.getItem('myStockData')) || [];
-        // カテゴリーの開閉状態を保存
         let collapsedCats = JSON.parse(localStorage.getItem('collapsedCats')) || [];
 
         function renderInventory() {
             const listContainer = document.getElementById('inventory-list');
+            const searchWord = document.getElementById('searchBar').value.toLowerCase();
             listContainer.innerHTML = '';
-            const categories = ["冷蔵庫", "トイレ", "お風呂", "パントリー", "ペット"];
             
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const tomorrow = new Date(today);
-            tomorrow.setDate(today.getDate() + 1);
+            const categories = ["冷蔵庫", "トイレ", "お風呂", "パントリー", "ペット"];
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0,0,0,0);
 
             categories.forEach(cat => {
-                let catItems = items.filter(i => i.category === cat);
-                catItems.sort((a, b) => {
-                    if (!a.expiry) return 1;
-                    if (!b.expiry) return -1;
-                    return new Date(a.expiry) - new Date(b.expiry);
+                // 検索フィルタリング
+                let catItems = items.filter(i => {
+                    const matchCat = i.category === cat;
+                    const matchSearch = i.name.toLowerCase().includes(searchWord);
+                    return matchCat && matchSearch;
                 });
 
                 if (catItems.length > 0) {
+                    // 期限順ソート
+                    catItems.sort((a, b) => {
+                        if (!a.expiry) return 1;
+                        if (!b.expiry) return -1;
+                        return new Date(a.expiry) - new Date(b.expiry);
+                    });
+
                     const isCollapsed = collapsedCats.includes(cat);
-                    
-                    // ヘッダー作成
                     const catHeader = document.createElement('div');
                     catHeader.className = `category-header ${isCollapsed ? 'collapsed' : ''}`;
-                    catHeader.textContent = cat;
+                    catHeader.textContent = `${cat} (${catItems.length})`;
                     catHeader.onclick = () => toggleCategory(cat);
                     listContainer.appendChild(catHeader);
 
-                    // リスト容器
                     const itemList = document.createElement('div');
                     itemList.className = `item-list ${isCollapsed ? 'collapsed' : ''}`;
                     
@@ -190,7 +203,6 @@
                         let expiryClass = '';
                         if (item.expiry) {
                             const expDate = new Date(item.expiry);
-                            expDate.setHours(0,0,0,0);
                             if (expDate <= tomorrow) expiryClass = 'expiry-alert';
                         }
 
@@ -198,10 +210,10 @@
                         el.className = 'item-card';
                         el.innerHTML = `
                             <div class="item-info">
-                                <span class="item-name">${item.name}</span>
+                                <span class="item-name editable" onclick="editName(${item.id})">${item.name}</span>
                                 <div class="item-meta">
                                     補充ライン: ${item.threshold}個以下<br>
-                                    期限: <span class="editable-date ${expiryClass}" onclick="editExpiry(${item.id})">${item.expiry || '未設定'}</span>
+                                    期限: <span class="editable editable-date ${expiryClass}" onclick="editExpiry(${item.id})">${item.expiry || '未設定'}</span>
                                 </div>
                                 <button class="delete-btn" onclick="deleteItem(${item.id})">削除</button>
                             </div>
@@ -221,56 +233,53 @@
             });
         }
 
-        // カテゴリー開閉切り替え
         function toggleCategory(cat) {
-            if (collapsedCats.includes(cat)) {
-                collapsedCats = collapsedCats.filter(c => c !== cat);
-            } else {
-                collapsedCats.push(cat);
-            }
+            collapsedCats = collapsedCats.includes(cat) ? collapsedCats.filter(c => c !== cat) : [...collapsedCats, cat];
             localStorage.setItem('collapsedCats', JSON.stringify(collapsedCats));
             renderInventory();
         }
 
-        // 【新機能】期限をあとから編集
+        // 名前（タグ）の編集
+        function editName(id) {
+            const item = items.find(i => i.id === id);
+            const newName = prompt("アイテム名を編集", item.name);
+            if (newName) {
+                item.name = newName;
+                saveData();
+                renderInventory();
+            }
+        }
+
         function editExpiry(id) {
             const item = items.find(i => i.id === id);
-            const newDate = prompt("新しい期限を入力してください (例: 2026-10-15)", item.expiry || "");
+            const newDate = prompt("期限を編集 (YYYY-MM-DD)", item.expiry || "");
             if (newDate !== null) {
-                // 簡単なバリデーション（yyyy-mm-dd形式を想定）
-                if (newDate === "" || /^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
-                    item.expiry = newDate;
-                    saveData();
-                    renderInventory();
-                } else {
-                    alert("日付は 2026-10-15 のような形式で入力してください。");
-                }
+                item.expiry = newDate;
+                saveData();
+                renderInventory();
             }
         }
 
         function addItem() {
             const name = document.getElementById('newName').value;
             if (!name) return;
-            const newItem = {
+            items.push({
                 id: Date.now(),
                 name: name,
                 category: document.getElementById('newCategory').value,
                 qty: parseInt(document.getElementById('newQty').value) || 0,
                 threshold: parseInt(document.getElementById('newThreshold').value) || 0,
                 expiry: document.getElementById('newExpiry').value
-            };
-            items.push(newItem);
+            });
             saveData();
             renderInventory();
             document.getElementById('newName').value = '';
-            document.getElementById('newExpiry').value = '';
         }
 
         function changeQty(id, change) {
             const item = items.find(i => i.id === id);
             if (item) {
-                item.qty += change;
-                if (item.qty < 0) item.qty = 0;
+                item.qty = Math.max(0, item.qty + change);
                 saveData();
                 renderInventory();
             }
@@ -301,22 +310,10 @@
             const listContainer = document.getElementById('shopping-list');
             listContainer.innerHTML = '';
             const shoppingItems = items.filter(item => item.qty <= item.threshold);
-            if (shoppingItems.length === 0) {
-                listContainer.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">すべて揃っています</div>';
-                return;
-            }
             shoppingItems.forEach(item => {
                 const el = document.createElement('div');
                 el.className = 'item-card';
-                el.innerHTML = `
-                    <div class="item-info">
-                        <span class="item-name">${item.name}</span>
-                        <div class="item-meta">${item.category}</div>
-                    </div>
-                    <div style="text-align:right;">
-                        <span class="shopping-alert">残り ${item.qty}個</span>
-                    </div>
-                `;
+                el.innerHTML = `<div class="item-info"><span class="item-name">${item.name}</span><div class="item-meta">${item.category}</div></div><div style="text-align:right;"><span class="shopping-alert">残り ${item.qty}個</span></div>`;
                 listContainer.appendChild(el);
             });
         }
