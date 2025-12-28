@@ -33,7 +33,6 @@
             color: #333;
             border-bottom: 1px solid #ddd; 
         }
-        /* ...以下、デザインや機能のコードが続きます（前回の修正をすべて含んでいます）... */
         
         .input-area {
             background: var(--card-bg);
@@ -87,6 +86,12 @@
         .item-info { flex-grow: 1; }
         .item-name { font-weight: bold; font-size: 17px; display: block; }
         .item-meta { font-size: 12px; color: #888; margin-top: 6px; line-height: 1.5; }
+        
+        /* 期限アラート用の赤文字スタイル */
+        .expiry-alert {
+            color: var(--danger-color) !important;
+            font-weight: bold;
+        }
         
         .qty-controls {
             display: flex;
@@ -173,8 +178,8 @@
                 </div>
             </div>
             
-            <span class="input-label">消費期限 (任意)</span>
-            <input type="text" id="newExpiry" placeholder="2025/12/31" onfocus="(this.type='date')" onblur="(this.type='text')">
+            <span class="input-label">消費期限</span>
+            <input type="date" id="newExpiry">
             
             <button class="add-btn" onclick="addItem()">リストに追加</button>
         </div>
@@ -197,7 +202,6 @@
     </div>
 
     <script>
-        // 外部送信なし・自分だけの保存
         let items = JSON.parse(localStorage.getItem('myStockData')) || [];
 
         function renderInventory() {
@@ -205,8 +209,23 @@
             listContainer.innerHTML = '';
             const categories = ["冷蔵庫", "トイレ", "お風呂", "パントリー", "ペット"];
             
+            // 今日の日付を取得（時間リセット）
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(today.getDate() + 1);
+
             categories.forEach(cat => {
-                const catItems = items.filter(i => i.category === cat);
+                // 同じカテゴリーのアイテムを抽出
+                let catItems = items.filter(i => i.category === cat);
+                
+                // 【新機能】期限が近い順に並び替え（未設定は一番下）
+                catItems.sort((a, b) => {
+                    if (!a.expiry) return 1;
+                    if (!b.expiry) return -1;
+                    return new Date(a.expiry) - new Date(b.expiry);
+                });
+
                 if (catItems.length > 0) {
                     const catHeader = document.createElement('div');
                     catHeader.className = 'category-header';
@@ -214,6 +233,17 @@
                     listContainer.appendChild(catHeader);
 
                     catItems.forEach(item => {
+                        // 【新機能】期限チェック
+                        let expiryClass = '';
+                        if (item.expiry) {
+                            const expDate = new Date(item.expiry);
+                            expDate.setHours(0,0,0,0);
+                            // 今日、または明日が期限なら赤文字クラスを適用
+                            if (expDate <= tomorrow) {
+                                expiryClass = 'expiry-alert';
+                            }
+                        }
+
                         const el = document.createElement('div');
                         el.className = 'item-card';
                         el.innerHTML = `
@@ -221,14 +251,14 @@
                                 <span class="item-name">${item.name}</span>
                                 <div class="item-meta">
                                     補充ライン: ${item.threshold}個以下<br>
-                                    期限: ${item.expiry || '未設定'}
+                                    <span class="${expiryClass}">期限: ${item.expiry || '未設定'}</span>
                                 </div>
                                 <button class="delete-btn" onclick="deleteItem(${item.id})">削除</button>
                             </div>
                             <div class="qty-controls">
                                 <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
                                 <div class="qty-display-area">
-                                    <span class="qty-label">現在の在庫</span>
+                                    <span class="qty-label">現在</span>
                                     <span class="qty-val">${item.qty}</span>
                                 </div>
                                 <button class="qty-btn" onclick="changeQty(${item.id}, 1)">＋</button>
@@ -255,6 +285,7 @@
             saveData();
             renderInventory();
             document.getElementById('newName').value = '';
+            document.getElementById('newExpiry').value = '';
         }
 
         function changeQty(id, change) {
@@ -318,4 +349,3 @@
     </script>
 </body>
 </html>
-
