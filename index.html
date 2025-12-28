@@ -96,6 +96,9 @@
             padding: 12px 20px; color: var(--text-secondary); font-size: 14px; font-weight: 600;
             display: flex; justify-content: space-between; align-items: center; cursor: pointer;
         }
+        .cat-title-area { display: flex; align-items: center; gap: 5px; }
+        .warning-icon { color: var(--danger-color); font-size: 14px; }
+        
         .item-card {
             background: var(--card-bg); padding: 15px; margin: 0 15px 10px 15px;
             border-radius: 12px; display: flex; justify-content: space-between;
@@ -299,7 +302,6 @@
             activeItemId = null;
         }
 
-        // --- 追加画面用のステップ ---
         function stepInput(id, delta) {
             const input = document.getElementById(id);
             let val = parseInt(input.value) || 0;
@@ -312,7 +314,6 @@
             input.value = newVal < 0 ? "なし" : newVal;
         }
 
-        // --- リスト編集用：補充ライン調整 ---
         function openThresholdEdit(id) {
             activeItemId = id;
             const item = items.find(x => x.id === id);
@@ -334,11 +335,7 @@
             document.getElementById('editThresholdDisplay').innerText = val === -1 ? "なし" : val;
         }
 
-        // --- リスト編集用：タグ変更 ---
-        function openTagEdit(id) {
-            activeItemId = id;
-            document.getElementById('tagSelector').style.display = 'flex';
-        }
+        function openTagEdit(id) { activeItemId = id; document.getElementById('tagSelector').style.display = 'flex'; }
         function applyTag(tagName) {
             const item = items.find(x => x.id === activeItemId);
             if(item) { item.tag = tagName; saveData(); renderInventory(); }
@@ -356,10 +353,20 @@
                 let filtered = items.filter(i => i.category === cat && (i.name.toLowerCase().includes(q) || (i.tag || "").toLowerCase().includes(q)));
                 if (filtered.length > 0) {
                     filtered.sort((a,b) => (a.expiry || 'z') > (b.expiry || 'z') ? 1 : -1);
+                    
                     const collapsed = collapsedCats.includes(cat);
+                    // 期限が近い・切れているアイテムがあるかチェック
+                    const hasUrgent = filtered.some(i => i.expiry && new Date(i.expiry).getTime() <= limit.getTime());
+                    
                     const header = document.createElement('div');
                     header.className = 'category-header';
-                    header.innerHTML = `<span>${cat} (${filtered.length})</span><span>${collapsed ? '▶' : '▼'}</span>`;
+                    header.innerHTML = `
+                        <div class="cat-title-area">
+                            <span>${cat} (${filtered.length})</span>
+                            ${(collapsed && hasUrgent) ? '<span class="warning-icon">⚠️</span>' : ''}
+                        </div>
+                        <span>${collapsed ? '▶' : '▼'}</span>`;
+                    
                     header.onclick = () => {
                         if(collapsed) { collapsedCats = collapsedCats.filter(c=>c!==cat); } else { collapsedCats.push(cat); }
                         localStorage.setItem('collapsedCats', JSON.stringify(collapsedCats));
