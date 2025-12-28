@@ -10,6 +10,7 @@
     <style>
         :root {
             --primary-color: #007AFF;
+            --success-color: #34C759;
             --bg-color: #F2F2F7;
             --card-bg: #FFFFFF;
             --danger-color: #FF3B30;
@@ -52,6 +53,8 @@
             font-size: 14px; font-weight: 600; cursor: pointer;
             display: flex; justify-content: space-between; align-items: center;
         }
+        .cat-title-area { display: flex; align-items: center; gap: 5px; }
+        .warning-icon { color: var(--danger-color); font-size: 16px; }
 
         .item-card {
             background: var(--card-bg); padding: 15px; margin: 0 15px 10px 15px;
@@ -63,11 +66,12 @@
         .item-tag { 
             display: inline-block; font-size: 10px; background: #E5E5EA; 
             color: #666; padding: 2px 6px; border-radius: 4px; margin-left: 5px;
+            cursor: pointer; border-bottom: 1px dotted #999;
         }
-        .item-meta { font-size: 12px; color: #888; margin-top: 6px; }
+        .item-meta { font-size: 12px; color: #888; margin-top: 6px; line-height: 1.6; }
         
-        .editable { border-bottom: 1px dashed #ccc; cursor: pointer; }
-        .expiry-alert { color: var(--danger-color) !important; font-weight: bold; }
+        .editable { border-bottom: 1px dashed #ccc; cursor: pointer; padding: 1px 0; }
+        .expiry-alert { color: var(--danger-color) !important; font-weight: bold; border-color: var(--danger-color); }
 
         .qty-controls { display: flex; align-items: center; gap: 8px; }
         .qty-btn {
@@ -75,9 +79,12 @@
             background: white; color: var(--primary-color); font-size: 18px;
             display: flex; align-items: center; justify-content: center;
         }
+        .bought-btn {
+            background-color: var(--success-color); color: white; border: none;
+            padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;
+        }
         .qty-val { font-size: 18px; font-weight: bold; }
 
-        /* 下部ナビゲーションとバッジ */
         .bottom-nav {
             position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.9);
             display: flex; border-top: 1px solid #ccc; height: 65px; backdrop-filter: blur(10px);
@@ -87,22 +94,10 @@
         .nav-icon { font-size: 22px; margin-bottom: 2px; }
         
         .badge {
-            position: absolute;
-            top: 5px;
-            right: 25%;
-            background-color: var(--danger-color);
-            color: white;
-            font-size: 10px;
-            font-weight: bold;
-            min-width: 18px;
-            height: 18px;
-            border-radius: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 4px;
-            box-sizing: border-box;
-            visibility: hidden; /* 0個のときは隠す */
+            position: absolute; top: 5px; right: 25%; background-color: var(--danger-color);
+            color: white; font-size: 10px; font-weight: bold; min-width: 18px;
+            height: 18px; border-radius: 9px; display: flex; align-items: center;
+            justify-content: center; padding: 0 4px; box-sizing: border-box; visibility: hidden;
         }
 
         .page { display: none; }
@@ -207,44 +202,40 @@
 
                 if (catItems.length > 0) {
                     catItems.sort((a, b) => {
+                        if (!a.expiry && !b.expiry) return 0;
                         if (!a.expiry) return 1;
                         if (!b.expiry) return -1;
                         return new Date(a.expiry) - new Date(b.expiry);
                     });
+                    const hasUrgentItem = catItems.some(item => item.expiry && new Date(item.expiry) <= tomorrow);
                     const isCollapsed = collapsedCats.includes(cat);
                     const catHeader = document.createElement('div');
                     catHeader.className = 'category-header';
-                    catHeader.innerHTML = `<span>${cat} (${catItems.length})</span><span>${isCollapsed ? '▶' : '▼'}</span>`;
+                    const warning = (isCollapsed && hasUrgentItem) ? '<span class="warning-icon">⚠️</span>' : '';
+                    catHeader.innerHTML = `<div class="cat-title-area"><span>${cat} (${catItems.length})</span>${warning}</div><span>${isCollapsed ? '▶' : '▼'}</span>`;
                     catHeader.onclick = () => toggleCategory(cat);
                     listContainer.appendChild(catHeader);
 
                     if (!isCollapsed) {
                         catItems.forEach(item => {
-                            let expiryClass = '';
-                            if (item.expiry) {
-                                const expDate = new Date(item.expiry);
-                                if (expDate <= tomorrow) expiryClass = 'expiry-alert';
-                            }
+                            let expiryClass = item.expiry && new Date(item.expiry) <= tomorrow ? 'expiry-alert' : '';
                             const el = document.createElement('div');
                             el.className = 'item-card';
                             el.innerHTML = `
                                 <div class="item-info">
                                     <span class="item-name editable" onclick="editName(${item.id})">${item.name}</span>
-                                    ${item.tag ? `<span class="item-tag">${item.tag}</span>` : ''}
+                                    <span class="item-tag" onclick="editTag(${item.id})">${item.tag || '＋タグ'}</span>
                                     <div class="item-meta">
-                                        補充ライン: ${item.threshold}個以下<br>
+                                        補充ライン: <span class="editable" onclick="editThreshold(${item.id})">${item.threshold}個以下</span><br>
                                         期限: <span class="editable ${expiryClass}" onclick="editExpiry(${item.id})">${item.expiry || '未設定'}</span>
                                     </div>
                                     <button class="delete-btn" onclick="deleteItem(${item.id})">削除</button>
                                 </div>
                                 <div class="qty-controls">
                                     <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
-                                    <div class="qty-display-area">
-                                        <span class="qty-val">${item.qty}</span>
-                                    </div>
+                                    <div class="qty-display-area"><span class="qty-val">${item.qty}</span></div>
                                     <button class="qty-btn" onclick="changeQty(${item.id}, 1)">＋</button>
-                                </div>
-                            `;
+                                </div>`;
                             listContainer.appendChild(el);
                         });
                     }
@@ -257,6 +248,41 @@
             collapsedCats = collapsedCats.includes(cat) ? collapsedCats.filter(c => c !== cat) : [...collapsedCats, cat];
             localStorage.setItem('collapsedCats', JSON.stringify(collapsedCats));
             renderInventory();
+        }
+
+        // --- 買ったボタンの機能 ---
+        function markAsBought(id) {
+            const item = items.find(i => i.id === id);
+            if (item) {
+                // 在庫数を補充ラインより1多い数に設定
+                item.qty = item.threshold + 1;
+                saveData();
+                renderShoppingList();
+                updateBadge();
+            }
+        }
+
+        // --- 編集機能 ---
+        function editName(id) {
+            const item = items.find(i => i.id === id);
+            const newName = prompt("名前を編集", item.name);
+            if (newName) { item.name = newName; saveData(); renderInventory(); }
+        }
+        function editTag(id) {
+            const item = items.find(i => i.id === id);
+            const tags = ["生鮮", "冷凍", "常備", "調味料", "なし"];
+            const newTag = prompt(`タグを変更してください\n(${tags.join(', ')})`, item.tag || "");
+            if (newTag !== null) { item.tag = (newTag === "なし" || newTag === "") ? "" : newTag; saveData(); renderInventory(); }
+        }
+        function editThreshold(id) {
+            const item = items.find(i => i.id === id);
+            const newVal = prompt("補充ライン", item.threshold);
+            if (newVal !== null) { item.threshold = parseInt(newVal) || 0; saveData(); renderInventory(); }
+        }
+        function editExpiry(id) {
+            const item = items.find(i => i.id === id);
+            const newDate = prompt("期限を編集 (YYYY-MM-DD)", item.expiry || "");
+            if (newDate !== null) { item.expiry = newDate; saveData(); renderInventory(); }
         }
 
         function addItem() {
@@ -276,25 +302,9 @@
             document.getElementById('newName').value = '';
         }
 
-        function editName(id) {
-            const item = items.find(i => i.id === id);
-            const newName = prompt("名前を編集", item.name);
-            if (newName) { item.name = newName; saveData(); renderInventory(); }
-        }
-
-        function editExpiry(id) {
-            const item = items.find(i => i.id === id);
-            const newDate = prompt("期限を編集 (YYYY-MM-DD)", item.expiry || "");
-            if (newDate !== null) { item.expiry = newDate; saveData(); renderInventory(); }
-        }
-
         function changeQty(id, change) {
             const item = items.find(i => i.id === id);
-            if (item) { 
-                item.qty = Math.max(0, item.qty + change); 
-                saveData(); 
-                renderInventory(); 
-            }
+            if (item) { item.qty = Math.max(0, item.qty + change); saveData(); renderInventory(); }
         }
 
         function deleteItem(id) {
@@ -316,10 +326,22 @@
             const listContainer = document.getElementById('shopping-list');
             listContainer.innerHTML = '';
             const shoppingItems = items.filter(item => item.qty <= item.threshold);
+            
+            if (shoppingItems.length === 0) {
+                listContainer.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">買うものはありません</div>';
+            }
+
             shoppingItems.forEach(item => {
                 const el = document.createElement('div');
                 el.className = 'item-card';
-                el.innerHTML = `<div class="item-info"><span class="item-name">${item.name}</span><div class="item-meta">${item.category}</div></div><div style="text-align:right;"><span style="color:red; font-weight:bold;">残り ${item.qty}個</span></div>`;
+                el.innerHTML = `
+                    <div class="item-info">
+                        <span class="item-name">${item.name}</span>
+                        <div class="item-meta">${item.category} / 残り ${item.qty}個</div>
+                    </div>
+                    <div>
+                        <button class="bought-btn" onclick="markAsBought(${item.id})">買った！</button>
+                    </div>`;
                 listContainer.appendChild(el);
             });
             updateBadge();
