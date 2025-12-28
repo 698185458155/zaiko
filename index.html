@@ -77,13 +77,33 @@
         }
         .qty-val { font-size: 18px; font-weight: bold; }
 
+        /* 下部ナビゲーションとバッジ */
         .bottom-nav {
             position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.9);
             display: flex; border-top: 1px solid #ccc; height: 65px; backdrop-filter: blur(10px);
         }
-        .nav-btn { flex: 1; border: none; background: none; font-size: 11px; color: #999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .nav-btn { flex: 1; border: none; background: none; font-size: 11px; color: #999; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .nav-btn.active { color: var(--primary-color); }
         .nav-icon { font-size: 22px; margin-bottom: 2px; }
+        
+        .badge {
+            position: absolute;
+            top: 5px;
+            right: 25%;
+            background-color: var(--danger-color);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            box-sizing: border-box;
+            visibility: hidden; /* 0個のときは隠す */
+        }
 
         .page { display: none; }
         .page.active { display: block; }
@@ -94,15 +114,12 @@
 
     <div id="page-inventory" class="page active">
         <h1>Home Inventory</h1>
-        
         <div class="search-container">
             <input type="text" id="searchBar" class="search-input" placeholder="🔍 名前やタグで絞り込み..." oninput="renderInventory()">
         </div>
-
         <div class="input-area">
             <span class="input-label">アイテム名</span>
             <input type="text" id="newName" placeholder="例：豚肉">
-            
             <div class="flex-row">
                 <div class="flex-item">
                     <span class="input-label">カテゴリー</span>
@@ -124,7 +141,6 @@
                     </select>
                 </div>
             </div>
-            
             <div class="flex-row">
                 <div class="flex-item">
                     <span class="input-label">個数</span>
@@ -135,13 +151,10 @@
                     <input type="number" id="newThreshold" value="1">
                 </div>
             </div>
-            
             <span class="input-label">消費期限</span>
             <input type="date" id="newExpiry">
-            
             <button class="add-btn" onclick="addItem()">リストに追加</button>
         </div>
-
         <div id="inventory-list"></div>
     </div>
 
@@ -155,6 +168,7 @@
             <span class="nav-icon">📦</span>在庫一覧
         </button>
         <button class="nav-btn" onclick="switchPage('shopping', this)">
+            <div id="shopping-badge" class="badge">0</div>
             <span class="nav-icon">🛒</span>買うもの
         </button>
     </div>
@@ -163,11 +177,21 @@
         let items = JSON.parse(localStorage.getItem('myStockData')) || [];
         let collapsedCats = JSON.parse(localStorage.getItem('collapsedCats')) || [];
 
+        function updateBadge() {
+            const shoppingCount = items.filter(item => item.qty <= item.threshold).length;
+            const badge = document.getElementById('shopping-badge');
+            if (shoppingCount > 0) {
+                badge.innerText = shoppingCount;
+                badge.style.visibility = 'visible';
+            } else {
+                badge.style.visibility = 'hidden';
+            }
+        }
+
         function renderInventory() {
             const listContainer = document.getElementById('inventory-list');
             const searchWord = document.getElementById('searchBar').value.toLowerCase();
             listContainer.innerHTML = '';
-            
             const categories = ["冷蔵庫", "冷凍庫", "パントリー", "その他"];
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
@@ -187,7 +211,6 @@
                         if (!b.expiry) return -1;
                         return new Date(a.expiry) - new Date(b.expiry);
                     });
-
                     const isCollapsed = collapsedCats.includes(cat);
                     const catHeader = document.createElement('div');
                     catHeader.className = 'category-header';
@@ -202,7 +225,6 @@
                                 const expDate = new Date(item.expiry);
                                 if (expDate <= tomorrow) expiryClass = 'expiry-alert';
                             }
-
                             const el = document.createElement('div');
                             el.className = 'item-card';
                             el.innerHTML = `
@@ -228,6 +250,7 @@
                     }
                 }
             });
+            updateBadge();
         }
 
         function toggleCategory(cat) {
@@ -267,7 +290,11 @@
 
         function changeQty(id, change) {
             const item = items.find(i => i.id === id);
-            if (item) { item.qty = Math.max(0, item.qty + change); saveData(); renderInventory(); }
+            if (item) { 
+                item.qty = Math.max(0, item.qty + change); 
+                saveData(); 
+                renderInventory(); 
+            }
         }
 
         function deleteItem(id) {
@@ -295,6 +322,7 @@
                 el.innerHTML = `<div class="item-info"><span class="item-name">${item.name}</span><div class="item-meta">${item.category}</div></div><div style="text-align:right;"><span style="color:red; font-weight:bold;">残り ${item.qty}個</span></div>`;
                 listContainer.appendChild(el);
             });
+            updateBadge();
         }
 
         renderInventory();
