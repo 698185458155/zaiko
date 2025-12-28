@@ -29,7 +29,6 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        /* ヘッダー */
         .page-header {
             position: sticky; top: 0; z-index: 100;
             background: #fff; border-bottom: 1px solid #ddd;
@@ -42,7 +41,6 @@
         }
         h1 { margin: 0; font-size: 18px; font-weight: 600; color: #333; }
 
-        /* サイドメニュー */
         .side-menu {
             position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
             background: #fff; z-index: 2000; transition: 0.3s;
@@ -63,7 +61,6 @@
             display: flex; align-items: center; gap: 10px; font-size: 15px; cursor: pointer;
         }
 
-        /* 検索 */
         .search-area {
             background: #fff; padding: 10px 15px; border-bottom: 1px solid #ddd;
             display: none; animation: slideDown 0.2s ease-out;
@@ -71,7 +68,6 @@
         @keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .search-input { width: 100%; padding: 10px 12px; border: none; background: #eee; border-radius: 10px; font-size: 14px; box-sizing: border-box; }
 
-        /* 入力エリア */
         .input-area {
             background: var(--card-bg); padding: 15px; margin: 15px;
             border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
@@ -94,7 +90,6 @@
         .flex-item { flex: 1; }
         .add-btn { background-color: var(--primary-color); color: white; border: none; font-weight: bold; width: 100%; padding: 14px; border-radius: 8px; margin-top: 5px; }
 
-        /* リスト表示 */
         .category-group { margin-bottom: 5px; }
         .category-header {
             padding: 12px 20px; color: var(--text-secondary); font-size: 14px; font-weight: 600;
@@ -103,7 +98,6 @@
         }
         .cat-title-area { display: flex; align-items: center; gap: 5px; }
         
-        /* ドラッグ関連スタイル */
         .items-wrapper { min-height: 10px; }
         .sortable-ghost { opacity: 0.3; background: #e0e0e0 !important; }
 
@@ -112,7 +106,18 @@
             border-radius: 12px; display: flex; justify-content: space-between;
             align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             position: relative;
+            transition: opacity 0.3s;
         }
+        /* 在庫0かつ補充なし用のスタイル */
+        .item-card.inactive {
+            opacity: 0.5;
+            background: #fafafa;
+        }
+        .item-card.inactive .item-name {
+            color: #888;
+            font-weight: normal;
+        }
+
         .drag-handle {
             color: #ccc; font-size: 20px; padding: 0 5px 0 15px;
             cursor: grab; user-select: none;
@@ -134,7 +139,6 @@
 
         .bought-btn { background-color: var(--success-color); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; }
 
-        /* フッター */
         .bottom-nav {
             position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.9);
             display: flex; border-top: 1px solid #ccc; height: 75px; backdrop-filter: blur(10px);
@@ -213,6 +217,8 @@
                 <option value="キッチン">キッチン</option>
                 <option value="トイレ">トイレ</option>
                 <option value="ペット">ペット</option>
+                <option value="薬">薬</option>
+                <option value="災害備蓄">災害備蓄</option>
                 <option value="その他">その他</option>
             </select>
 
@@ -265,7 +271,7 @@
         let items = JSON.parse(localStorage.getItem('myStockData')) || [];
         let collapsedCats = JSON.parse(localStorage.getItem('collapsedCats')) || [];
         let activeItemId = null;
-        const CATEGORIES = ["冷蔵室", "冷凍室", "野菜室", "常備品", "調味料", "日用品", "ランドリー", "キッチン", "トイレ", "ペット", "その他"];
+        const CATEGORIES = ["冷蔵室", "冷凍室", "野菜室", "常備品", "調味料", "日用品", "ランドリー", "キッチン", "トイレ", "ペット", "薬", "災害備蓄", "その他"];
 
         function toggleMenu() {
             const menu = document.getElementById('sideMenu');
@@ -333,7 +339,22 @@
             CATEGORIES.forEach(cat => {
                 let filtered = items.filter(i => i.category === cat && i.name.toLowerCase().includes(q));
                 if (filtered.length > 0) {
-                    filtered.sort((a,b) => (a.expiry || 'z') > (b.expiry || 'z') ? 1 : -1);
+                    // 並び替えロジック
+                    filtered.sort((a, b) => {
+                        const aInactive = (a.qty == 0 && a.threshold == -1);
+                        const bInactive = (b.qty == 0 && b.threshold == -1);
+                        
+                        // 1. 在庫0かつ補充なしのものを一番下に
+                        if (aInactive !== bInactive) return aInactive ? 1 : -1;
+                        
+                        // 2. 期限が近い順
+                        const aExp = a.expiry || 'z';
+                        const bExp = b.expiry || 'z';
+                        if (aExp !== bExp) return aExp > bExp ? 1 : -1;
+                        
+                        return 0;
+                    });
+
                     const collapsed = collapsedCats.includes(cat);
                     const hasUrgent = filtered.some(i => i.expiry && new Date(i.expiry).getTime() <= limit.getTime());
                     
@@ -364,8 +385,10 @@
                         filtered.forEach(i => {
                             let expStyle = (i.expiry && new Date(i.expiry).getTime() <= limit.getTime()) ? 'expiry-alert' : '';
                             const threshDisp = i.threshold === -1 ? "なし" : i.threshold + "個以下";
+                            const isInactive = (i.qty == 0 && i.threshold == -1);
+                            
                             const card = document.createElement('div');
-                            card.className = 'item-card';
+                            card.className = `item-card ${isInactive ? 'inactive' : ''}`;
                             card.dataset.id = i.id;
                             card.innerHTML = `
                                 <div class="item-info">
@@ -385,11 +408,10 @@
                     group.appendChild(itemsWrapper);
                     listContainer.appendChild(group);
 
-                    // Sortableの設定
                     new Sortable(itemsWrapper, {
                         group: 'nested',
                         animation: 150,
-                        handle: '.drag-handle', // ハンドルのみでドラッグ可能に
+                        handle: '.drag-handle',
                         ghostClass: 'sortable-ghost',
                         onEnd: function (evt) {
                             const itemId = evt.item.dataset.id;
