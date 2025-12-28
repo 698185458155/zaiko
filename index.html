@@ -100,12 +100,38 @@
             justify-content: center; padding: 0 4px; box-sizing: border-box; visibility: hidden;
         }
 
+        /* カスタムセレクターUI */
+        #custom-selector {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000; display: none;
+            align-items: center; justify-content: center;
+        }
+        .selector-content {
+            background: white; width: 80%; border-radius: 15px; padding: 20px;
+        }
+        .selector-option {
+            padding: 15px; border-bottom: 1px solid #eee; text-align: center;
+            font-size: 17px; color: var(--primary-color);
+        }
+        .selector-option:last-child { border-bottom: none; }
+
         .page { display: none; }
         .page.active { display: block; }
         .delete-btn { background: none; border: none; color: #bbb; font-size: 11px; margin-top: 10px; text-decoration: underline; padding: 0; width: auto; }
     </style>
 </head>
 <body>
+
+    <div id="custom-selector" onclick="closeSelector()">
+        <div class="selector-content" onclick="event.stopPropagation()">
+            <div class="selector-option" onclick="applyNewTag('生鮮')">生鮮</div>
+            <div class="selector-option" onclick="applyNewTag('冷凍')">冷凍</div>
+            <div class="selector-option" onclick="applyNewTag('常備')">常備</div>
+            <div class="selector-option" onclick="applyNewTag('調味料')">調味料</div>
+            <div class="selector-option" onclick="applyNewTag('')" style="color:#888;">なし</div>
+            <div class="selector-option" onclick="closeSelector()" style="color:var(--danger-color); font-weight:bold;">キャンセル</div>
+        </div>
+    </div>
 
     <div id="page-inventory" class="page active">
         <h1>Home Inventory</h1>
@@ -171,6 +197,7 @@
     <script>
         let items = JSON.parse(localStorage.getItem('myStockData')) || [];
         let collapsedCats = JSON.parse(localStorage.getItem('collapsedCats')) || [];
+        let editingItemId = null;
 
         function updateBadge() {
             const shoppingCount = items.filter(item => item.qty <= item.threshold).length;
@@ -224,7 +251,7 @@
                             el.innerHTML = `
                                 <div class="item-info">
                                     <span class="item-name editable" onclick="editName(${item.id})">${item.name}</span>
-                                    <span class="item-tag" onclick="editTag(${item.id})">${item.tag || '＋タグ'}</span>
+                                    <span class="item-tag" onclick="openTagSelector(${item.id})">${item.tag || '＋タグ'}</span>
                                     <div class="item-meta">
                                         補充ライン: <span class="editable" onclick="editThreshold(${item.id})">${item.threshold}個以下</span><br>
                                         期限: <span class="editable ${expiryClass}" onclick="editExpiry(${item.id})">${item.expiry || '未設定'}</span>
@@ -250,11 +277,29 @@
             renderInventory();
         }
 
-        // --- 買ったボタンの機能 ---
+        // --- タグ選択専用の機能 ---
+        function openTagSelector(id) {
+            editingItemId = id;
+            document.getElementById('custom-selector').style.display = 'flex';
+        }
+
+        function closeSelector() {
+            document.getElementById('custom-selector').style.display = 'none';
+        }
+
+        function applyNewTag(tagName) {
+            const item = items.find(i => i.id === editingItemId);
+            if (item) {
+                item.tag = tagName;
+                saveData();
+                renderInventory();
+            }
+            closeSelector();
+        }
+
         function markAsBought(id) {
             const item = items.find(i => i.id === id);
             if (item) {
-                // 在庫数を補充ラインより1多い数に設定
                 item.qty = item.threshold + 1;
                 saveData();
                 renderShoppingList();
@@ -262,17 +307,10 @@
             }
         }
 
-        // --- 編集機能 ---
         function editName(id) {
             const item = items.find(i => i.id === id);
             const newName = prompt("名前を編集", item.name);
             if (newName) { item.name = newName; saveData(); renderInventory(); }
-        }
-        function editTag(id) {
-            const item = items.find(i => i.id === id);
-            const tags = ["生鮮", "冷凍", "常備", "調味料", "なし"];
-            const newTag = prompt(`タグを変更してください\n(${tags.join(', ')})`, item.tag || "");
-            if (newTag !== null) { item.tag = (newTag === "なし" || newTag === "") ? "" : newTag; saveData(); renderInventory(); }
         }
         function editThreshold(id) {
             const item = items.find(i => i.id === id);
@@ -326,11 +364,9 @@
             const listContainer = document.getElementById('shopping-list');
             listContainer.innerHTML = '';
             const shoppingItems = items.filter(item => item.qty <= item.threshold);
-            
             if (shoppingItems.length === 0) {
                 listContainer.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">買うものはありません</div>';
             }
-
             shoppingItems.forEach(item => {
                 const el = document.createElement('div');
                 el.className = 'item-card';
@@ -339,9 +375,7 @@
                         <span class="item-name">${item.name}</span>
                         <div class="item-meta">${item.category} / 残り ${item.qty}個</div>
                     </div>
-                    <div>
-                        <button class="bought-btn" onclick="markAsBought(${item.id})">買った！</button>
-                    </div>`;
+                    <div><button class="bought-btn" onclick="markAsBought(${item.id})">買った！</button></div>`;
                 listContainer.appendChild(el);
             });
             updateBadge();
