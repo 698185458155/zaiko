@@ -100,7 +100,6 @@
             justify-content: center; padding: 0 4px; box-sizing: border-box; visibility: hidden;
         }
 
-        /* カスタムセレクターUI */
         #custom-selector {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 1000; display: none;
@@ -140,7 +139,7 @@
         </div>
         <div class="input-area">
             <span class="input-label">アイテム名</span>
-            <input type="text" id="newName" placeholder="例：豚肉">
+            <input type="text" id="newName" placeholder="例：醤油">
             <div class="flex-row">
                 <div class="flex-item">
                     <span class="input-label">カテゴリー</span>
@@ -200,7 +199,7 @@
         let editingItemId = null;
 
         function updateBadge() {
-            const shoppingCount = items.filter(item => item.qty <= item.threshold).length;
+            const shoppingCount = items.filter(item => Number(item.qty) <= Number(item.threshold)).length;
             const badge = document.getElementById('shopping-badge');
             if (shoppingCount > 0) {
                 badge.innerText = shoppingCount;
@@ -215,6 +214,7 @@
             const searchWord = document.getElementById('searchBar').value.toLowerCase();
             listContainer.innerHTML = '';
             const categories = ["冷蔵庫", "冷凍庫", "パントリー", "その他"];
+            
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             tomorrow.setHours(0,0,0,0);
@@ -228,13 +228,18 @@
                 });
 
                 if (catItems.length > 0) {
+                    // 【修正】期限が近い順に厳密ソート
                     catItems.sort((a, b) => {
-                        if (!a.expiry && !b.expiry) return 0;
-                        if (!a.expiry) return 1;
-                        if (!b.expiry) return -1;
-                        return new Date(a.expiry) - new Date(b.expiry);
+                        const dateA = a.expiry ? new Date(a.expiry).getTime() : Infinity;
+                        const dateB = b.expiry ? new Date(b.expiry).getTime() : Infinity;
+                        return dateA - dateB;
                     });
-                    const hasUrgentItem = catItems.some(item => item.expiry && new Date(item.expiry) <= tomorrow);
+
+                    const hasUrgentItem = catItems.some(item => {
+                        if(!item.expiry) return false;
+                        return new Date(item.expiry).getTime() <= tomorrow.getTime();
+                    });
+
                     const isCollapsed = collapsedCats.includes(cat);
                     const catHeader = document.createElement('div');
                     catHeader.className = 'category-header';
@@ -245,7 +250,7 @@
 
                     if (!isCollapsed) {
                         catItems.forEach(item => {
-                            let expiryClass = item.expiry && new Date(item.expiry) <= tomorrow ? 'expiry-alert' : '';
+                            let expiryClass = (item.expiry && new Date(item.expiry).getTime() <= tomorrow.getTime()) ? 'expiry-alert' : '';
                             const el = document.createElement('div');
                             el.className = 'item-card';
                             el.innerHTML = `
@@ -277,7 +282,6 @@
             renderInventory();
         }
 
-        // --- タグ選択専用の機能 ---
         function openTagSelector(id) {
             editingItemId = id;
             document.getElementById('custom-selector').style.display = 'flex';
@@ -289,18 +293,14 @@
 
         function applyNewTag(tagName) {
             const item = items.find(i => i.id === editingItemId);
-            if (item) {
-                item.tag = tagName;
-                saveData();
-                renderInventory();
-            }
+            if (item) { item.tag = tagName; saveData(); renderInventory(); }
             closeSelector();
         }
 
         function markAsBought(id) {
             const item = items.find(i => i.id === id);
             if (item) {
-                item.qty = item.threshold + 1;
+                item.qty = Number(item.threshold) + 1;
                 saveData();
                 renderShoppingList();
                 updateBadge();
@@ -312,11 +312,13 @@
             const newName = prompt("名前を編集", item.name);
             if (newName) { item.name = newName; saveData(); renderInventory(); }
         }
+
         function editThreshold(id) {
             const item = items.find(i => i.id === id);
             const newVal = prompt("補充ライン", item.threshold);
             if (newVal !== null) { item.threshold = parseInt(newVal) || 0; saveData(); renderInventory(); }
         }
+
         function editExpiry(id) {
             const item = items.find(i => i.id === id);
             const newDate = prompt("期限を編集 (YYYY-MM-DD)", item.expiry || "");
@@ -342,7 +344,7 @@
 
         function changeQty(id, change) {
             const item = items.find(i => i.id === id);
-            if (item) { item.qty = Math.max(0, item.qty + change); saveData(); renderInventory(); }
+            if (item) { item.qty = Math.max(0, Number(item.qty) + change); saveData(); renderInventory(); }
         }
 
         function deleteItem(id) {
@@ -363,7 +365,7 @@
         function renderShoppingList() {
             const listContainer = document.getElementById('shopping-list');
             listContainer.innerHTML = '';
-            const shoppingItems = items.filter(item => item.qty <= item.threshold);
+            const shoppingItems = items.filter(item => Number(item.qty) <= Number(item.threshold));
             if (shoppingItems.length === 0) {
                 listContainer.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">買うものはありません</div>';
             }
