@@ -26,22 +26,22 @@
             overflow-x: hidden;
         }
         
-        /* ヘッダー周り */
+        /* ヘッダー */
         .page-header {
             position: sticky; top: 0; z-index: 100;
             background: #fff; border-bottom: 1px solid #ddd;
-            display: flex; align-items: center; padding: 0 15px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 15px; height: 50px;
         }
-        .menu-trigger {
+        .icon-btn {
             font-size: 24px; cursor: pointer; color: var(--primary-color);
-            padding: 10px 5px; width: 30px;
+            width: 40px; height: 100%; display: flex; align-items: center; justify-content: center;
         }
-        h1 { flex: 1; margin: 0; padding: 15px 0; text-align: center; font-size: 18px; font-weight: 600; color: #333; }
-        .header-spacer { width: 35px; } /* 左右対称用 */
+        h1 { margin: 0; font-size: 18px; font-weight: 600; color: #333; }
 
         /* サイドメニュー */
         .side-menu {
-            position: fixed; top: 0; left: -250px; width: 250px; height: 100%;
+            position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
             background: #fff; z-index: 2000; transition: 0.3s;
             box-shadow: 2px 0 10px rgba(0,0,0,0.1); padding: 20px; box-sizing: border-box;
         }
@@ -50,13 +50,26 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.4); z-index: 1500; display: none;
         }
+        .menu-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;
+        }
+        .menu-close-btn { font-size: 28px; color: #999; cursor: pointer; line-height: 1; }
         .menu-item {
             padding: 15px 0; border-bottom: 1px solid #eee; color: #333;
-            display: flex; align-items: center; gap: 10px; font-size: 15px;
+            display: flex; align-items: center; gap: 10px; font-size: 15px; cursor: pointer;
         }
 
-        /* 検索バー */
-        .search-area { background: #fff; padding: 0 15px 10px; }
+        /* 検索バー (初期状態は非表示) */
+        .search-area {
+            background: #fff; padding: 10px 15px; border-bottom: 1px solid #ddd;
+            display: none; /* 最初は隠す */
+            animation: slideDown 0.2s ease-out;
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
         .search-input {
             width: 100%; padding: 10px 12px; border: none; background: #eee;
             border-radius: 10px; font-size: 14px; box-sizing: border-box;
@@ -74,7 +87,6 @@
             background: #fff; -webkit-appearance: none;
         }
         
-        /* 数量調節ボタン付き入力 */
         .number-input-group {
             display: flex; align-items: center; gap: 5px; margin-bottom: 12px;
         }
@@ -88,7 +100,7 @@
         .flex-item { flex: 1; }
         .add-btn { background-color: var(--primary-color); color: white; border: none; font-weight: bold; width: 100%; padding: 14px; border-radius: 8px; margin-top: 5px; }
 
-        /* 在庫リスト表示 */
+        /* リスト */
         .category-header {
             padding: 12px 20px; color: var(--text-secondary); font-size: 14px; font-weight: 600;
             display: flex; justify-content: space-between; align-items: center; cursor: pointer;
@@ -114,7 +126,7 @@
         .qty-val { font-size: 18px; font-weight: bold; min-width: 20px; text-align: center; }
         .bought-btn { background-color: var(--success-color); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; }
 
-        /* フッターナビ */
+        /* フッター */
         .bottom-nav {
             position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.9);
             display: flex; border-top: 1px solid #ccc; height: 75px; backdrop-filter: blur(10px);
@@ -146,10 +158,12 @@
 
     <div id="menuOverlay" class="menu-overlay" onclick="toggleMenu()"></div>
     <div id="sideMenu" class="side-menu">
-        <h2 style="font-size: 18px; margin-bottom: 20px;">設定・管理</h2>
+        <div class="menu-header">
+            <h2 style="font-size: 18px; margin: 0;">設定・管理</h2>
+            <div class="menu-close-btn" onclick="toggleMenu()">×</div>
+        </div>
         <div class="menu-item" onclick="exportData()">📦 データをバックアップ</div>
         <div class="menu-item" onclick="importData()">📥 データを復元</div>
-        <div class="menu-item" onclick="toggleMenu()" style="color: #999; margin-top: 20px;">閉じる</div>
     </div>
 
     <div id="custom-selector" onclick="closeSelector()">
@@ -165,11 +179,12 @@
 
     <div id="page-inventory" class="page active">
         <div class="page-header">
-            <div class="menu-trigger" onclick="toggleMenu()">≡</div>
+            <div class="icon-btn" onclick="toggleMenu()" style="justify-content:flex-start;">≡</div>
             <h1>Home Inventory</h1>
-            <div class="header-spacer"></div>
+            <div class="icon-btn" onclick="toggleSearch()" style="justify-content:flex-end;">🔍</div>
         </div>
-        <div class="search-area">
+        
+        <div id="searchArea" class="search-area">
             <input type="text" id="searchBar" class="search-input" placeholder="🔍 名前やタグで検索..." oninput="renderInventory()">
         </div>
 
@@ -229,9 +244,8 @@
 
     <div id="page-shopping" class="page">
         <div class="page-header">
-            <div class="header-spacer"></div>
-            <h1>Shopping List</h1>
-            <div class="header-spacer"></div>
+            <div style="width:40px;"></div> <h1>Shopping List</h1>
+            <div style="width:40px;"></div>
         </div>
         <div id="shopping-list" style="padding-top: 15px;"></div>
     </div>
@@ -256,13 +270,25 @@
         function toggleMenu() {
             const menu = document.getElementById('sideMenu');
             const overlay = document.getElementById('menuOverlay');
-            const isOpen = menu.classList.contains('open');
-            if (isOpen) {
+            if (menu.classList.contains('open')) {
                 menu.classList.remove('open');
                 overlay.style.display = 'none';
             } else {
                 menu.classList.add('open');
                 overlay.style.display = 'block';
+            }
+        }
+
+        // 検索バー開閉
+        function toggleSearch() {
+            const area = document.getElementById('searchArea');
+            if (area.style.display === 'block') {
+                area.style.display = 'none';
+                document.getElementById('searchBar').value = ''; // 閉じたらリセット
+                renderInventory(); // リストも全表示に戻す
+            } else {
+                area.style.display = 'block';
+                document.getElementById('searchBar').focus(); // 開いたらフォーカス
             }
         }
 
@@ -307,17 +333,22 @@
             const q = document.getElementById('searchBar').value.toLowerCase();
             list.innerHTML = '';
             const limit = new Date(); limit.setDate(limit.getDate() + 1);
+            limit.setHours(23, 59, 59, 999);
 
             CATEGORIES.forEach(cat => {
                 let filtered = items.filter(i => i.category === cat && (i.name.toLowerCase().includes(q) || (i.tag || "").toLowerCase().includes(q)));
                 if (filtered.length > 0) {
-                    filtered.sort((a,b) => (a.expiry || 'z') > (b.expiry || 'z') ? 1 : -1);
+                    filtered.sort((a,b) => {
+                         const dateA = a.expiry ? new Date(a.expiry).getTime() : Infinity;
+                         const dateB = b.expiry ? new Date(b.expiry).getTime() : Infinity;
+                         return dateA - dateB;
+                    });
                     const collapsed = collapsedCats.includes(cat);
+                    const hasUrgent = filtered.some(i => i.expiry && new Date(i.expiry).getTime() <= limit.getTime());
                     const header = document.createElement('div');
                     header.className = 'category-header';
-                    header.innerHTML = `<span>${cat} (${filtered.length})</span><span>${collapsed ? '▶' : '▼'}</span>`;
+                    header.innerHTML = `<div class="cat-title-area"><span>${cat} (${filtered.length})</span>${(collapsed && hasUrgent) ? '<span class="warning-icon">⚠️</span>' : ''}</div><span>${collapsed ? '▶' : '▼'}</span>`;
                     header.onclick = () => {
-                        collapsedCats = collapsed.includes ? collapsedCats.filter(c=>c!==cat) : [...collapsedCats, cat];
                         if(collapsed) { collapsedCats = collapsedCats.filter(c=>c!==cat); } else { collapsedCats.push(cat); }
                         localStorage.setItem('collapsedCats', JSON.stringify(collapsedCats));
                         renderInventory();
@@ -326,7 +357,7 @@
 
                     if (!collapsed) {
                         filtered.forEach(i => {
-                            let expStyle = (i.expiry && new Date(i.expiry) <= limit) ? 'expiry-alert' : '';
+                            let expStyle = (i.expiry && new Date(i.expiry).getTime() <= limit.getTime()) ? 'expiry-alert' : '';
                             const card = document.createElement('div');
                             card.className = 'item-card';
                             card.innerHTML = `
