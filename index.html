@@ -212,6 +212,7 @@
                         <option value="お風呂">お風呂</option>
                         <option value="キッチン">キッチン</option>
                         <option value="トイレ">トイレ</option>
+                        <option value="ペット">ペット</option>
                         <option value="その他">その他</option>
                     </select>
                 </div>
@@ -276,7 +277,8 @@
         let items = JSON.parse(localStorage.getItem('myStockData')) || [];
         let collapsedCats = JSON.parse(localStorage.getItem('collapsedCats')) || [];
         let activeItemId = null;
-        const CATEGORIES = ["冷蔵庫", "パントリー", "お風呂", "キッチン", "トイレ", "その他"];
+        // カテゴリーリストを更新
+        const CATEGORIES = ["冷蔵庫", "パントリー", "お風呂", "キッチン", "トイレ", "ペット", "その他"];
 
         function toggleMenu() {
             const menu = document.getElementById('sideMenu');
@@ -355,7 +357,6 @@
                     filtered.sort((a,b) => (a.expiry || 'z') > (b.expiry || 'z') ? 1 : -1);
                     
                     const collapsed = collapsedCats.includes(cat);
-                    // 期限が近い・切れているアイテムがあるかチェック
                     const hasUrgent = filtered.some(i => i.expiry && new Date(i.expiry).getTime() <= limit.getTime());
                     
                     const header = document.createElement('div');
