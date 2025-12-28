@@ -105,7 +105,6 @@
             align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .item-name { font-weight: bold; font-size: 17px; }
-        .item-tag { font-size: 10px; background: #E5E5EA; color: #666; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
         .item-meta { font-size: 12px; color: #888; margin-top: 6px; }
         .editable { border-bottom: 1px dashed #ccc; padding-bottom: 1px; }
         .expiry-alert { color: var(--danger-color) !important; font-weight: bold; }
@@ -145,7 +144,6 @@
         }
         .modal-content { background: white; width: 80%; border-radius: 15px; padding: 20px; text-align: center; }
         .modal-title { font-size: 16px; margin-bottom: 20px; color: #333; font-weight: bold; }
-        .selector-option { padding: 15px; border-bottom: 1px solid #eee; color: var(--primary-color); font-size: 17px; }
 
         .page { display: none; }
         .page.active { display: block; }
@@ -162,18 +160,6 @@
         </div>
         <div class="menu-item" onclick="exportData()">📦 データをバックアップ</div>
         <div class="menu-item" onclick="importData()">📥 データを復元</div>
-    </div>
-
-    <div id="tagSelector" class="modal-overlay" onclick="closeModals()">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="modal-title">タグを変更</div>
-            <div class="selector-option" onclick="applyTag('生鮮')">生鮮</div>
-            <div class="selector-option" onclick="applyTag('冷凍')">冷凍</div>
-            <div class="selector-option" onclick="applyTag('常備')">常備</div>
-            <div class="selector-option" onclick="applyTag('調味料')">調味料</div>
-            <div class="selector-option" onclick="applyTag('')" style="color:#888;">なし</div>
-            <div class="selector-option" onclick="closeModals()" style="color:var(--danger-color); font-weight:bold; border:none;">キャンセル</div>
-        </div>
     </div>
 
     <div id="thresholdModal" class="modal-overlay" onclick="closeModals()">
@@ -196,37 +182,27 @@
         </div>
         
         <div id="searchArea" class="search-area">
-            <input type="text" id="searchBar" class="search-input" placeholder="🔍 名前やタグで検索..." oninput="renderInventory()">
+            <input type="text" id="searchBar" class="search-input" placeholder="🔍 名前やカテゴリーで検索..." oninput="renderInventory()">
         </div>
 
         <div class="input-area">
             <span class="input-label">アイテム名</span>
             <input type="text" id="newName" placeholder="例：シャンプー">
             
-            <div class="flex-row">
-                <div class="flex-item">
-                    <span class="input-label">カテゴリー</span>
-                    <select id="newCategory">
-                        <option value="冷蔵庫">冷蔵庫</option>
-                        <option value="パントリー">パントリー</option>
-                        <option value="お風呂">お風呂</option>
-                        <option value="キッチン">キッチン</option>
-                        <option value="トイレ">トイレ</option>
-                        <option value="ペット">ペット</option>
-                        <option value="その他">その他</option>
-                    </select>
-                </div>
-                <div class="flex-item">
-                    <span class="input-label">タグ</span>
-                    <select id="newTag">
-                        <option value="">なし</option>
-                        <option value="生鮮">生鮮</option>
-                        <option value="冷凍">冷凍</option>
-                        <option value="常備">常備</option>
-                        <option value="調味料">調味料</option>
-                    </select>
-                </div>
-            </div>
+            <span class="input-label">カテゴリー</span>
+            <select id="newCategory">
+                <option value="冷蔵室">冷蔵室</option>
+                <option value="冷凍室">冷凍室</option>
+                <option value="野菜室">野菜室</option>
+                <option value="常備品">常備品</option>
+                <option value="調味料">調味料</option>
+                <option value="日用品">日用品</option>
+                <option value="ランドリー">ランドリー</option>
+                <option value="キッチン">キッチン</option>
+                <option value="トイレ">トイレ</option>
+                <option value="ペット">ペット</option>
+                <option value="その他">その他</option>
+            </select>
 
             <div class="flex-row">
                 <div class="flex-item">
@@ -277,8 +253,9 @@
         let items = JSON.parse(localStorage.getItem('myStockData')) || [];
         let collapsedCats = JSON.parse(localStorage.getItem('collapsedCats')) || [];
         let activeItemId = null;
-        // カテゴリーリストを更新
-        const CATEGORIES = ["冷蔵庫", "パントリー", "お風呂", "キッチン", "トイレ", "ペット", "その他"];
+        
+        // カテゴリーリストをご指定のものに更新
+        const CATEGORIES = ["冷蔵室", "冷凍室", "野菜室", "常備品", "調味料", "日用品", "ランドリー", "キッチン", "トイレ", "ペット", "その他"];
 
         function toggleMenu() {
             const menu = document.getElementById('sideMenu');
@@ -299,7 +276,6 @@
         }
 
         function closeModals() {
-            document.getElementById('tagSelector').style.display = 'none';
             document.getElementById('thresholdModal').style.display = 'none';
             activeItemId = null;
         }
@@ -337,13 +313,6 @@
             document.getElementById('editThresholdDisplay').innerText = val === -1 ? "なし" : val;
         }
 
-        function openTagEdit(id) { activeItemId = id; document.getElementById('tagSelector').style.display = 'flex'; }
-        function applyTag(tagName) {
-            const item = items.find(x => x.id === activeItemId);
-            if(item) { item.tag = tagName; saveData(); renderInventory(); }
-            closeModals();
-        }
-
         function renderInventory() {
             const list = document.getElementById('inventory-list');
             const q = document.getElementById('searchBar').value.toLowerCase();
@@ -352,7 +321,8 @@
             limit.setHours(23, 59, 59, 999);
 
             CATEGORIES.forEach(cat => {
-                let filtered = items.filter(i => i.category === cat && (i.name.toLowerCase().includes(q) || (i.tag || "").toLowerCase().includes(q)));
+                // タグ検索を削除し、名前とカテゴリー検索に
+                let filtered = items.filter(i => i.category === cat && (i.name.toLowerCase().includes(q) || i.category.toLowerCase().includes(q)));
                 if (filtered.length > 0) {
                     filtered.sort((a,b) => (a.expiry || 'z') > (b.expiry || 'z') ? 1 : -1);
                     
@@ -384,7 +354,6 @@
                             card.innerHTML = `
                                 <div class="item-info">
                                     <span class="item-name editable" onclick="editName(${i.id})">${i.name}</span>
-                                    <span class="item-tag" onclick="openTagEdit(${i.id})">${i.tag || '＋タグ'}</span>
                                     <div class="item-meta">補充: <span onclick="openThresholdEdit(${i.id})" class="editable">${threshDisp}</span> / 期限: <span onclick="editExpiry(${i.id})" class="editable ${expStyle}">${i.expiry || '未設定'}</span></div>
                                     <button class="delete-btn" onclick="deleteItem(${i.id})">削除</button>
                                 </div>
@@ -408,7 +377,6 @@
             items.push({
                 id: Date.now(), name: name,
                 category: document.getElementById('newCategory').value,
-                tag: document.getElementById('newTag').value,
                 qty: parseInt(document.getElementById('newQty').value) || 0,
                 threshold: threshVal === "なし" ? -1 : parseInt(threshVal),
                 expiry: document.getElementById('newExpiry').value
