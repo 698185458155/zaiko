@@ -21,12 +21,14 @@
             background-color: var(--bg-color);
             margin: 0; padding: 0; padding-bottom: 80px;
         }
-        h1 { margin: 0; padding: 15px; text-align: center; background: #fff; font-size: 20px; font-weight: 300; color: #333; }
-
-        .search-container {
-            padding: 10px 15px; background: #fff; border-bottom: 1px solid #ddd;
+        /* ヘッダー固定 */
+        .page-header {
             position: sticky; top: 0; z-index: 100;
+            background: #fff; border-bottom: 1px solid #ddd;
         }
+        h1 { margin: 0; padding: 15px; text-align: center; font-size: 20px; font-weight: 300; color: #333; }
+
+        .search-container { padding: 10px 15px; background: #fff; }
         .search-input {
             width: 100%; padding: 10px 12px; border: none; background: #eee;
             border-radius: 10px; font-size: 14px; box-sizing: border-box;
@@ -56,6 +58,9 @@
         .cat-title-area { display: flex; align-items: center; gap: 5px; }
         .warning-icon { color: var(--danger-color); font-size: 16px; }
 
+        /* リスト全体の余白（買い物リストでの被り防止） */
+        .list-wrapper { padding-top: 10px; }
+
         .item-card {
             background: var(--card-bg); padding: 15px; margin: 0 15px 10px 15px;
             border-radius: 12px; display: flex; justify-content: space-between;
@@ -66,7 +71,7 @@
         .item-tag { 
             display: inline-block; font-size: 10px; background: #E5E5EA; 
             color: #666; padding: 2px 6px; border-radius: 4px; margin-left: 5px;
-            cursor: pointer; border-bottom: 1px dotted #999;
+            cursor: pointer;
         }
         .item-meta { font-size: 12px; color: #888; margin-top: 6px; line-height: 1.6; }
         
@@ -88,6 +93,7 @@
         .bottom-nav {
             position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.9);
             display: flex; border-top: 1px solid #ccc; height: 65px; backdrop-filter: blur(10px);
+            z-index: 1000;
         }
         .nav-btn { flex: 1; border: none; background: none; font-size: 11px; color: #999; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .nav-btn.active { color: var(--primary-color); }
@@ -102,7 +108,7 @@
 
         #custom-selector {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 1000; display: none;
+            background: rgba(0,0,0,0.5); z-index: 2000; display: none;
             align-items: center; justify-content: center;
         }
         .selector-content {
@@ -133,9 +139,11 @@
     </div>
 
     <div id="page-inventory" class="page active">
-        <h1>Home Inventory</h1>
-        <div class="search-container">
-            <input type="text" id="searchBar" class="search-input" placeholder="🔍 名前やタグで絞り込み..." oninput="renderInventory()">
+        <div class="page-header">
+            <h1>Home Inventory</h1>
+            <div class="search-container">
+                <input type="text" id="searchBar" class="search-input" placeholder="🔍 名前やタグで絞り込み..." oninput="renderInventory()">
+            </div>
         </div>
         <div class="input-area">
             <span class="input-label">アイテム名</span>
@@ -153,7 +161,7 @@
                     </select>
                 </div>
                 <div class="flex-item">
-                    <span class="input-label">タグ（分類）</span>
+                    <span class="input-label">タグ</span>
                     <select id="newTag">
                         <option value="">なし</option>
                         <option value="生鮮">生鮮</option>
@@ -177,12 +185,14 @@
             <input type="date" id="newExpiry">
             <button class="add-btn" onclick="addItem()">リストに追加</button>
         </div>
-        <div id="inventory-list"></div>
+        <div id="inventory-list" class="list-wrapper"></div>
     </div>
 
     <div id="page-shopping" class="page">
-        <h1>Shopping List</h1>
-        <div id="shopping-list"></div>
+        <div class="page-header">
+            <h1>Shopping List</h1>
+        </div>
+        <div id="shopping-list" class="list-wrapper"></div>
     </div>
 
     <div class="bottom-nav">
@@ -200,7 +210,6 @@
         let collapsedCats = JSON.parse(localStorage.getItem('collapsedCats')) || [];
         let editingItemId = null;
 
-        // カテゴリーリストを定義
         const CATEGORIES = ["冷蔵庫", "パントリー", "お風呂", "キッチン", "トイレ", "その他"];
 
         function updateBadge() {
@@ -255,10 +264,7 @@
                         catItems.forEach(item => {
                             let expiryClass = '';
                             if (item.expiry) {
-                                const itemDate = new Date(item.expiry).getTime();
-                                if (itemDate <= limitDate.getTime()) {
-                                    expiryClass = 'expiry-alert';
-                                }
+                                if (new Date(item.expiry).getTime() <= limitDate.getTime()) expiryClass = 'expiry-alert';
                             }
 
                             const el = document.createElement('div');
@@ -370,6 +376,7 @@
             btn.classList.add('active');
             if (pageId === 'inventory') renderInventory();
             if (pageId === 'shopping') renderShoppingList();
+            window.scrollTo(0,0);
         }
 
         function renderShoppingList() {
@@ -384,7 +391,7 @@
                 el.className = 'item-card';
                 el.innerHTML = `
                     <div class="item-info">
-                        <span class="item-name">${item.name}</span>
+                        <div class="item-name">${item.name}</div>
                         <div class="item-meta">${item.category} / 残り ${item.qty}個</div>
                     </div>
                     <div><button class="bought-btn" onclick="markAsBought(${item.id})">買った！</button></div>`;
