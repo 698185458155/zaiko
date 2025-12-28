@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Home Inventory</title>
     
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="在庫管理">
     <link rel="apple-touch-icon" href="https://github.com/698185458155/zaiko/raw/main/IMG_6373.PNG">
     
     <style>
@@ -19,16 +22,24 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
             background-color: var(--bg-color);
-            margin: 0; padding: 0; padding-bottom: 80px;
+            margin: 0; padding: 0; padding-bottom: 100px;
         }
-        /* ヘッダー固定 */
         .page-header {
             position: sticky; top: 0; z-index: 100;
             background: #fff; border-bottom: 1px solid #ddd;
         }
         h1 { margin: 0; padding: 15px; text-align: center; font-size: 20px; font-weight: 300; color: #333; }
 
-        .search-container { padding: 10px 15px; background: #fff; }
+        /* バックアップボタンのスタイル */
+        .backup-area {
+            display: flex; gap: 10px; padding: 0 15px 10px; background: #fff;
+        }
+        .backup-btn {
+            flex: 1; font-size: 11px; padding: 6px; border-radius: 6px;
+            border: 1px solid #ddd; background: #f9f9f9; color: #666;
+        }
+
+        .search-container { padding: 0 15px 10px; background: #fff; }
         .search-input {
             width: 100%; padding: 10px 12px; border: none; background: #eee;
             border-radius: 10px; font-size: 14px; box-sizing: border-box;
@@ -58,7 +69,6 @@
         .cat-title-area { display: flex; align-items: center; gap: 5px; }
         .warning-icon { color: var(--danger-color); font-size: 16px; }
 
-        /* リスト全体の余白（買い物リストでの被り防止） */
         .list-wrapper { padding-top: 10px; }
 
         .item-card {
@@ -71,7 +81,6 @@
         .item-tag { 
             display: inline-block; font-size: 10px; background: #E5E5EA; 
             color: #666; padding: 2px 6px; border-radius: 4px; margin-left: 5px;
-            cursor: pointer;
         }
         .item-meta { font-size: 12px; color: #888; margin-top: 6px; line-height: 1.6; }
         
@@ -92,8 +101,8 @@
 
         .bottom-nav {
             position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.9);
-            display: flex; border-top: 1px solid #ccc; height: 65px; backdrop-filter: blur(10px);
-            z-index: 1000;
+            display: flex; border-top: 1px solid #ccc; height: 75px; backdrop-filter: blur(10px);
+            z-index: 1000; padding-bottom: env(safe-area-inset-bottom);
         }
         .nav-btn { flex: 1; border: none; background: none; font-size: 11px; color: #999; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .nav-btn.active { color: var(--primary-color); }
@@ -111,14 +120,8 @@
             background: rgba(0,0,0,0.5); z-index: 2000; display: none;
             align-items: center; justify-content: center;
         }
-        .selector-content {
-            background: white; width: 80%; border-radius: 15px; padding: 20px;
-        }
-        .selector-option {
-            padding: 15px; border-bottom: 1px solid #eee; text-align: center;
-            font-size: 17px; color: var(--primary-color);
-        }
-        .selector-option:last-child { border-bottom: none; }
+        .selector-content { background: white; width: 80%; border-radius: 15px; padding: 20px; }
+        .selector-option { padding: 15px; border-bottom: 1px solid #eee; text-align: center; font-size: 17px; color: var(--primary-color); }
 
         .page { display: none; }
         .page.active { display: block; }
@@ -141,6 +144,10 @@
     <div id="page-inventory" class="page active">
         <div class="page-header">
             <h1>Home Inventory</h1>
+            <div class="backup-area">
+                <button class="backup-btn" onclick="exportData()">データをバックアップ(コピー)</button>
+                <button class="backup-btn" onclick="importData()">データを復元</button>
+            </div>
             <div class="search-container">
                 <input type="text" id="searchBar" class="search-input" placeholder="🔍 名前やタグで絞り込み..." oninput="renderInventory()">
             </div>
@@ -209,8 +216,26 @@
         let items = JSON.parse(localStorage.getItem('myStockData')) || [];
         let collapsedCats = JSON.parse(localStorage.getItem('collapsedCats')) || [];
         let editingItemId = null;
-
         const CATEGORIES = ["冷蔵庫", "パントリー", "お風呂", "キッチン", "トイレ", "その他"];
+
+        // --- バックアップ機能 ---
+        function exportData() {
+            const dataStr = JSON.stringify(items);
+            navigator.clipboard.writeText(dataStr).then(() => {
+                alert("全データをコピーしました！メモ帳などに貼り付けて保存してください。");
+            });
+        }
+        function importData() {
+            const dataStr = prompt("保存したデータをここに貼り付けてください");
+            if (dataStr) {
+                try {
+                    items = JSON.parse(dataStr);
+                    saveData();
+                    renderInventory();
+                    alert("復元完了しました！");
+                } catch (e) { alert("形式が正しくありません。"); }
+            }
+        }
 
         function updateBadge() {
             const shoppingCount = items.filter(item => Number(item.qty) <= Number(item.threshold)).length;
@@ -218,72 +243,35 @@
             if (shoppingCount > 0) {
                 badge.innerText = shoppingCount;
                 badge.style.visibility = 'visible';
-            } else {
-                badge.style.visibility = 'hidden';
-            }
+            } else { badge.style.visibility = 'hidden'; }
         }
 
         function renderInventory() {
             const listContainer = document.getElementById('inventory-list');
             const searchWord = document.getElementById('searchBar').value.toLowerCase();
             listContainer.innerHTML = '';
-            
             const limitDate = new Date();
             limitDate.setDate(limitDate.getDate() + 1);
             limitDate.setHours(23, 59, 59, 999);
 
             CATEGORIES.forEach(cat => {
-                let catItems = items.filter(i => {
-                    const matchCat = i.category === cat;
-                    const nameMatch = i.name.toLowerCase().includes(searchWord);
-                    const tagMatch = (i.tag || "").toLowerCase().includes(searchWord);
-                    return matchCat && (nameMatch || tagMatch);
-                });
-
+                let catItems = items.filter(i => (i.category === cat) && (i.name.toLowerCase().includes(searchWord) || (i.tag || "").toLowerCase().includes(searchWord)));
                 if (catItems.length > 0) {
-                    catItems.sort((a, b) => {
-                        const dateA = a.expiry ? new Date(a.expiry).getTime() : Infinity;
-                        const dateB = b.expiry ? new Date(b.expiry).getTime() : Infinity;
-                        return dateA - dateB;
-                    });
-
-                    const hasUrgentItem = catItems.some(item => {
-                        if(!item.expiry) return false;
-                        return new Date(item.expiry).getTime() <= limitDate.getTime();
-                    });
-
+                    catItems.sort((a, b) => (a.expiry ? new Date(a.expiry).getTime() : Infinity) - (b.expiry ? new Date(b.expiry).getTime() : Infinity));
                     const isCollapsed = collapsedCats.includes(cat);
+                    const hasUrgent = catItems.some(i => i.expiry && new Date(i.expiry).getTime() <= limitDate.getTime());
                     const catHeader = document.createElement('div');
                     catHeader.className = 'category-header';
-                    const warning = (isCollapsed && hasUrgentItem) ? '<span class="warning-icon">⚠️</span>' : '';
-                    catHeader.innerHTML = `<div class="cat-title-area"><span>${cat} (${catItems.length})</span>${warning}</div><span>${isCollapsed ? '▶' : '▼'}</span>`;
+                    catHeader.innerHTML = `<div class="cat-title-area"><span>${cat} (${catItems.length})</span>${(isCollapsed && hasUrgent) ? '<span class="warning-icon">⚠️</span>' : ''}</div><span>${isCollapsed ? '▶' : '▼'}</span>`;
                     catHeader.onclick = () => toggleCategory(cat);
                     listContainer.appendChild(catHeader);
 
                     if (!isCollapsed) {
                         catItems.forEach(item => {
-                            let expiryClass = '';
-                            if (item.expiry) {
-                                if (new Date(item.expiry).getTime() <= limitDate.getTime()) expiryClass = 'expiry-alert';
-                            }
-
+                            let expiryClass = (item.expiry && new Date(item.expiry).getTime() <= limitDate.getTime()) ? 'expiry-alert' : '';
                             const el = document.createElement('div');
                             el.className = 'item-card';
-                            el.innerHTML = `
-                                <div class="item-info">
-                                    <span class="item-name editable" onclick="editName(${item.id})">${item.name}</span>
-                                    <span class="item-tag" onclick="openTagSelector(${item.id})">${item.tag || '＋タグ'}</span>
-                                    <div class="item-meta">
-                                        補充ライン: <span class="editable" onclick="editThreshold(${item.id})">${item.threshold}個以下</span><br>
-                                        期限: <span class="editable ${expiryClass}" onclick="editExpiry(${item.id})">${item.expiry || '未設定'}</span>
-                                    </div>
-                                    <button class="delete-btn" onclick="deleteItem(${item.id})">削除</button>
-                                </div>
-                                <div class="qty-controls">
-                                    <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
-                                    <div class="qty-display-area"><span class="qty-val">${item.qty}</span></div>
-                                    <button class="qty-btn" onclick="changeQty(${item.id}, 1)">＋</button>
-                                </div>`;
+                            el.innerHTML = `<div class="item-info"><span class="item-name editable" onclick="editName(${item.id})">${item.name}</span><span class="item-tag" onclick="openTagSelector(${item.id})">${item.tag || '＋タグ'}</span><div class="item-meta">補充: <span class="editable" onclick="editThreshold(${item.id})">${item.threshold}個以下</span> / 期限: <span class="editable ${expiryClass}" onclick="editExpiry(${item.id})">${item.expiry || '未設定'}</span></div><button class="delete-btn" onclick="deleteItem(${item.id})">削除</button></div><div class="qty-controls"><button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button><span class="qty-val">${item.qty}</span><button class="qty-btn" onclick="changeQty(${item.id}, 1)">＋</button></div>`;
                             listContainer.appendChild(el);
                         });
                     }
@@ -292,114 +280,20 @@
             updateBadge();
         }
 
-        function toggleCategory(cat) {
-            collapsedCats = collapsedCats.includes(cat) ? collapsedCats.filter(c => c !== cat) : [...collapsedCats, cat];
-            localStorage.setItem('collapsedCats', JSON.stringify(collapsedCats));
-            renderInventory();
-        }
-
-        function openTagSelector(id) {
-            editingItemId = id;
-            document.getElementById('custom-selector').style.display = 'flex';
-        }
-
-        function closeSelector() {
-            document.getElementById('custom-selector').style.display = 'none';
-        }
-
-        function applyNewTag(tagName) {
-            const item = items.find(i => i.id === editingItemId);
-            if (item) { item.tag = tagName; saveData(); renderInventory(); }
-            closeSelector();
-        }
-
-        function markAsBought(id) {
-            const item = items.find(i => i.id === id);
-            if (item) {
-                item.qty = Number(item.threshold) + 1;
-                saveData();
-                renderShoppingList();
-                updateBadge();
-            }
-        }
-
-        function editName(id) {
-            const item = items.find(i => i.id === id);
-            const newName = prompt("名前を編集", item.name);
-            if (newName) { item.name = newName; saveData(); renderInventory(); }
-        }
-
-        function editThreshold(id) {
-            const item = items.find(i => i.id === id);
-            const newVal = prompt("補充ライン", item.threshold);
-            if (newVal !== null) { item.threshold = parseInt(newVal) || 0; saveData(); renderInventory(); }
-        }
-
-        function editExpiry(id) {
-            const item = items.find(i => i.id === id);
-            const newDate = prompt("期限を編集 (YYYY-MM-DD)", item.expiry || "");
-            if (newDate !== null) { item.expiry = newDate; saveData(); renderInventory(); }
-        }
-
-        function addItem() {
-            const name = document.getElementById('newName').value;
-            if (!name) return;
-            items.push({
-                id: Date.now(),
-                name: name,
-                category: document.getElementById('newCategory').value,
-                tag: document.getElementById('newTag').value,
-                qty: parseInt(document.getElementById('newQty').value) || 0,
-                threshold: parseInt(document.getElementById('newThreshold').value) || 0,
-                expiry: document.getElementById('newExpiry').value
-            });
-            saveData();
-            renderInventory();
-            document.getElementById('newName').value = '';
-        }
-
-        function changeQty(id, change) {
-            const item = items.find(i => i.id === id);
-            if (item) { item.qty = Math.max(0, Number(item.qty) + change); saveData(); renderInventory(); }
-        }
-
-        function deleteItem(id) {
-            if(confirm('削除しますか？')) { items = items.filter(i => i.id !== id); saveData(); renderInventory(); }
-        }
-
+        function toggleCategory(cat) { collapsedCats = collapsedCats.includes(cat) ? collapsedCats.filter(c => c !== cat) : [...collapsedCats, cat]; localStorage.setItem('collapsedCats', JSON.stringify(collapsedCats)); renderInventory(); }
+        function openTagSelector(id) { editingItemId = id; document.getElementById('custom-selector').style.display = 'flex'; }
+        function closeSelector() { document.getElementById('custom-selector').style.display = 'none'; }
+        function applyNewTag(tagName) { const item = items.find(i => i.id === editingItemId); if (item) { item.tag = tagName; saveData(); renderInventory(); } closeSelector(); }
+        function markAsBought(id) { const item = items.find(i => i.id === id); if (item) { item.qty = Number(item.threshold) + 1; saveData(); renderShoppingList(); updateBadge(); } }
+        function editName(id) { const item = items.find(i => i.id === id); const n = prompt("名前", item.name); if (n) { item.name = n; saveData(); renderInventory(); } }
+        function editThreshold(id) { const item = items.find(i => i.id === id); const v = prompt("補充ライン", item.threshold); if (v !== null) { item.threshold = parseInt(v) || 0; saveData(); renderInventory(); } }
+        function editExpiry(id) { const item = items.find(i => i.id === id); const d = prompt("期限 (YYYY-MM-DD)", item.expiry || ""); if (d !== null) { item.expiry = d; saveData(); renderInventory(); } }
+        function addItem() { const n = document.getElementById('newName').value; if (!n) return; items.push({ id: Date.now(), name: n, category: document.getElementById('newCategory').value, tag: document.getElementById('newTag').value, qty: parseInt(document.getElementById('newQty').value) || 0, threshold: parseInt(document.getElementById('newThreshold').value) || 0, expiry: document.getElementById('newExpiry').value }); saveData(); renderInventory(); document.getElementById('newName').value = ''; }
+        function changeQty(id, c) { const item = items.find(i => i.id === id); if (item) { item.qty = Math.max(0, Number(item.qty) + c); saveData(); renderInventory(); } }
+        function deleteItem(id) { if(confirm('削除？')) { items = items.filter(i => i.id !== id); saveData(); renderInventory(); } }
         function saveData() { localStorage.setItem('myStockData', JSON.stringify(items)); }
-
-        function switchPage(pageId, btn) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById('page-' + pageId).classList.add('active');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            if (pageId === 'inventory') renderInventory();
-            if (pageId === 'shopping') renderShoppingList();
-            window.scrollTo(0,0);
-        }
-
-        function renderShoppingList() {
-            const listContainer = document.getElementById('shopping-list');
-            listContainer.innerHTML = '';
-            const shoppingItems = items.filter(item => Number(item.qty) <= Number(item.threshold));
-            if (shoppingItems.length === 0) {
-                listContainer.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">買うものはありません</div>';
-            }
-            shoppingItems.forEach(item => {
-                const el = document.createElement('div');
-                el.className = 'item-card';
-                el.innerHTML = `
-                    <div class="item-info">
-                        <div class="item-name">${item.name}</div>
-                        <div class="item-meta">${item.category} / 残り ${item.qty}個</div>
-                    </div>
-                    <div><button class="bought-btn" onclick="markAsBought(${item.id})">買った！</button></div>`;
-                listContainer.appendChild(el);
-            });
-            updateBadge();
-        }
-
+        function switchPage(pid, btn) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + pid).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); if (pid === 'inventory') renderInventory(); if (pid === 'shopping') renderShoppingList(); window.scrollTo(0,0); }
+        function renderShoppingList() { const list = document.getElementById('shopping-list'); list.innerHTML = ''; const sItems = items.filter(i => Number(i.qty) <= Number(i.threshold)); if (sItems.length === 0) { list.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">なし</div>'; } sItems.forEach(i => { const el = document.createElement('div'); el.className = 'item-card'; el.innerHTML = `<div class="item-info"><div class="item-name">${i.name}</div><div class="item-meta">${i.category} / 残り ${i.qty}個</div></div><div><button class="bought-btn" onclick="markAsBought(${i.id})">買った！</button></div>`; list.appendChild(el); }); updateBadge(); }
         renderInventory();
     </script>
 </body>
