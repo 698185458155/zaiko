@@ -10,6 +10,8 @@
     <meta name="apple-mobile-web-app-title" content="在庫管理">
     <link rel="apple-touch-icon" href="https://github.com/698185458155/zaiko/raw/main/IMG_6373.PNG">
     
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
     <style>
         :root {
             --primary-color: #007AFF;
@@ -24,6 +26,7 @@
             background-color: var(--bg-color);
             margin: 0; padding: 0; padding-bottom: 100px;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
         
         /* ヘッダー */
@@ -92,24 +95,30 @@
         .add-btn { background-color: var(--primary-color); color: white; border: none; font-weight: bold; width: 100%; padding: 14px; border-radius: 8px; margin-top: 5px; }
 
         /* リスト表示 */
+        .category-group { margin-bottom: 5px; }
         .category-header {
             padding: 12px 20px; color: var(--text-secondary); font-size: 14px; font-weight: 600;
             display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+            user-select: none;
         }
         .cat-title-area { display: flex; align-items: center; gap: 5px; }
         .warning-icon { color: var(--danger-color); font-size: 14px; }
         
+        /* ドラッグ中のスタイル */
+        .sortable-ghost { opacity: 0.3; background: var(--primary-color) !important; }
+        .sortable-drag { opacity: 0.9; transform: rotate(2deg); }
+
         .item-card {
             background: var(--card-bg); padding: 15px; margin: 0 15px 10px 15px;
             border-radius: 12px; display: flex; justify-content: space-between;
             align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            touch-action: none; /* ドラッグ操作のため */
         }
         .item-name { font-weight: bold; font-size: 17px; }
         .item-meta { font-size: 12px; color: #888; margin-top: 6px; }
         .editable { border-bottom: 1px dashed #ccc; padding-bottom: 1px; }
         .expiry-alert { color: var(--danger-color) !important; font-weight: bold; }
 
-        /* 数量・補充操作 */
         .qty-controls { display: flex; align-items: center; gap: 10px; }
         .qty-btn-v2 {
             width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--primary-color);
@@ -118,7 +127,6 @@
         }
         .qty-val { font-size: 18px; font-weight: bold; min-width: 20px; text-align: center; }
 
-        /* 買い物リスト用 */
         .bought-btn { background-color: var(--success-color); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; }
 
         /* フッター */
@@ -136,7 +144,6 @@
             height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; visibility: hidden;
         }
 
-        /* 共通セレクター・ポップアップ */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 3000; display: none;
@@ -182,7 +189,7 @@
         </div>
         
         <div id="searchArea" class="search-area">
-            <input type="text" id="searchBar" class="search-input" placeholder="🔍 名前やカテゴリーで検索..." oninput="renderInventory()">
+            <input type="text" id="searchBar" class="search-input" placeholder="🔍 名前で検索..." oninput="renderInventory()">
         </div>
 
         <div class="input-area">
@@ -253,8 +260,6 @@
         let items = JSON.parse(localStorage.getItem('myStockData')) || [];
         let collapsedCats = JSON.parse(localStorage.getItem('collapsedCats')) || [];
         let activeItemId = null;
-        
-        // カテゴリーリストをご指定のものに更新
         const CATEGORIES = ["冷蔵室", "冷凍室", "野菜室", "常備品", "調味料", "日用品", "ランドリー", "キッチン", "トイレ", "ペット", "その他"];
 
         function toggleMenu() {
@@ -314,20 +319,22 @@
         }
 
         function renderInventory() {
-            const list = document.getElementById('inventory-list');
+            const listContainer = document.getElementById('inventory-list');
             const q = document.getElementById('searchBar').value.toLowerCase();
-            list.innerHTML = '';
+            listContainer.innerHTML = '';
             const limit = new Date(); limit.setDate(limit.getDate() + 1);
             limit.setHours(23, 59, 59, 999);
 
             CATEGORIES.forEach(cat => {
-                // タグ検索を削除し、名前とカテゴリー検索に
-                let filtered = items.filter(i => i.category === cat && (i.name.toLowerCase().includes(q) || i.category.toLowerCase().includes(q)));
+                let filtered = items.filter(i => i.category === cat && i.name.toLowerCase().includes(q));
                 if (filtered.length > 0) {
                     filtered.sort((a,b) => (a.expiry || 'z') > (b.expiry || 'z') ? 1 : -1);
                     
                     const collapsed = collapsedCats.includes(cat);
                     const hasUrgent = filtered.some(i => i.expiry && new Date(i.expiry).getTime() <= limit.getTime());
+                    
+                    const group = document.createElement('div');
+                    group.className = 'category-group';
                     
                     const header = document.createElement('div');
                     header.className = 'category-header';
@@ -343,14 +350,19 @@
                         localStorage.setItem('collapsedCats', JSON.stringify(collapsedCats));
                         renderInventory();
                     };
-                    list.appendChild(header);
+                    group.appendChild(header);
 
+                    const itemsWrapper = document.createElement('div');
+                    itemsWrapper.className = 'items-wrapper';
+                    itemsWrapper.dataset.category = cat; // カテゴリー移動判定用
+                    
                     if (!collapsed) {
                         filtered.forEach(i => {
                             let expStyle = (i.expiry && new Date(i.expiry).getTime() <= limit.getTime()) ? 'expiry-alert' : '';
                             const threshDisp = i.threshold === -1 ? "なし" : i.threshold + "個以下";
                             const card = document.createElement('div');
                             card.className = 'item-card';
+                            card.dataset.id = i.id;
                             card.innerHTML = `
                                 <div class="item-info">
                                     <span class="item-name editable" onclick="editName(${i.id})">${i.name}</span>
@@ -362,9 +374,34 @@
                                     <span class="qty-val">${i.qty}</span>
                                     <button class="qty-btn-v2" onclick="changeQty(${i.id},1)">＋</button>
                                 </div>`;
-                            list.appendChild(card);
+                            itemsWrapper.appendChild(card);
                         });
                     }
+                    group.appendChild(itemsWrapper);
+                    listContainer.appendChild(group);
+
+                    // 各カテゴリーのアイテムリストをSortableにする
+                    new Sortable(itemsWrapper, {
+                        group: 'nested', // カテゴリー間を移動可能に
+                        animation: 150,
+                        fallbackOnBody: true,
+                        swapThreshold: 0.65,
+                        delay: 200, // 長押しでドラッグ開始
+                        delayOnTouchOnly: true,
+                        ghostClass: 'sortable-ghost',
+                        onEnd: function (evt) {
+                            const itemId = evt.item.dataset.id;
+                            const newCategory = evt.to.dataset.category;
+                            
+                            // データのカテゴリーを更新
+                            const itemIndex = items.findIndex(x => x.id == itemId);
+                            if (itemIndex > -1) {
+                                items[itemIndex].category = newCategory;
+                                saveData();
+                                renderInventory(); // 再描画して順番やバッジを確定
+                            }
+                        }
+                    });
                 }
             });
             updateBadge();
