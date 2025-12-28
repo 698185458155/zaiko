@@ -71,7 +71,7 @@
         .item-meta { font-size: 12px; color: #888; margin-top: 6px; line-height: 1.6; }
         
         .editable { border-bottom: 1px dashed #ccc; cursor: pointer; padding: 1px 0; }
-        .expiry-alert { color: var(--danger-color) !important; font-weight: bold; border-color: var(--danger-color); }
+        .expiry-alert { color: var(--danger-color) !important; font-weight: bold !important; }
 
         .qty-controls { display: flex; align-items: center; gap: 8px; }
         .qty-btn {
@@ -139,14 +139,16 @@
         </div>
         <div class="input-area">
             <span class="input-label">アイテム名</span>
-            <input type="text" id="newName" placeholder="例：醤油">
+            <input type="text" id="newName" placeholder="例：シャンプー">
             <div class="flex-row">
                 <div class="flex-item">
                     <span class="input-label">カテゴリー</span>
                     <select id="newCategory">
                         <option value="冷蔵庫">冷蔵庫</option>
-                        <option value="冷凍庫">冷凍庫</option>
                         <option value="パントリー">パントリー</option>
+                        <option value="お風呂">お風呂</option>
+                        <option value="キッチン">キッチン</option>
+                        <option value="トイレ">トイレ</option>
                         <option value="その他">その他</option>
                     </select>
                 </div>
@@ -198,6 +200,9 @@
         let collapsedCats = JSON.parse(localStorage.getItem('collapsedCats')) || [];
         let editingItemId = null;
 
+        // カテゴリーリストを定義
+        const CATEGORIES = ["冷蔵庫", "パントリー", "お風呂", "キッチン", "トイレ", "その他"];
+
         function updateBadge() {
             const shoppingCount = items.filter(item => Number(item.qty) <= Number(item.threshold)).length;
             const badge = document.getElementById('shopping-badge');
@@ -213,13 +218,12 @@
             const listContainer = document.getElementById('inventory-list');
             const searchWord = document.getElementById('searchBar').value.toLowerCase();
             listContainer.innerHTML = '';
-            const categories = ["冷蔵庫", "冷凍庫", "パントリー", "その他"];
             
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(0,0,0,0);
+            const limitDate = new Date();
+            limitDate.setDate(limitDate.getDate() + 1);
+            limitDate.setHours(23, 59, 59, 999);
 
-            categories.forEach(cat => {
+            CATEGORIES.forEach(cat => {
                 let catItems = items.filter(i => {
                     const matchCat = i.category === cat;
                     const nameMatch = i.name.toLowerCase().includes(searchWord);
@@ -228,7 +232,6 @@
                 });
 
                 if (catItems.length > 0) {
-                    // 【修正】期限が近い順に厳密ソート
                     catItems.sort((a, b) => {
                         const dateA = a.expiry ? new Date(a.expiry).getTime() : Infinity;
                         const dateB = b.expiry ? new Date(b.expiry).getTime() : Infinity;
@@ -237,7 +240,7 @@
 
                     const hasUrgentItem = catItems.some(item => {
                         if(!item.expiry) return false;
-                        return new Date(item.expiry).getTime() <= tomorrow.getTime();
+                        return new Date(item.expiry).getTime() <= limitDate.getTime();
                     });
 
                     const isCollapsed = collapsedCats.includes(cat);
@@ -250,7 +253,14 @@
 
                     if (!isCollapsed) {
                         catItems.forEach(item => {
-                            let expiryClass = (item.expiry && new Date(item.expiry).getTime() <= tomorrow.getTime()) ? 'expiry-alert' : '';
+                            let expiryClass = '';
+                            if (item.expiry) {
+                                const itemDate = new Date(item.expiry).getTime();
+                                if (itemDate <= limitDate.getTime()) {
+                                    expiryClass = 'expiry-alert';
+                                }
+                            }
+
                             const el = document.createElement('div');
                             el.className = 'item-card';
                             el.innerHTML = `
