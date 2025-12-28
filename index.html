@@ -26,6 +26,7 @@
             overflow-x: hidden;
         }
         
+        /* ヘッダー */
         .page-header {
             position: sticky; top: 0; z-index: 100;
             background: #fff; border-bottom: 1px solid #ddd;
@@ -38,6 +39,7 @@
         }
         h1 { margin: 0; font-size: 18px; font-weight: 600; color: #333; }
 
+        /* サイドメニュー */
         .side-menu {
             position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
             background: #fff; z-index: 2000; transition: 0.3s;
@@ -58,20 +60,15 @@
             display: flex; align-items: center; gap: 10px; font-size: 15px; cursor: pointer;
         }
 
+        /* 検索 */
         .search-area {
             background: #fff; padding: 10px 15px; border-bottom: 1px solid #ddd;
-            display: none;
-            animation: slideDown 0.2s ease-out;
+            display: none; animation: slideDown 0.2s ease-out;
         }
-        @keyframes slideDown {
-            from { transform: translateY(-10px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .search-input {
-            width: 100%; padding: 10px 12px; border: none; background: #eee;
-            border-radius: 10px; font-size: 14px; box-sizing: border-box;
-        }
+        @keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .search-input { width: 100%; padding: 10px 12px; border: none; background: #eee; border-radius: 10px; font-size: 14px; box-sizing: border-box; }
 
+        /* 入力エリア */
         .input-area {
             background: var(--card-bg); padding: 15px; margin: 15px;
             border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
@@ -83,19 +80,18 @@
             background: #fff; -webkit-appearance: none;
         }
         
-        .number-input-group {
-            display: flex; align-items: center; gap: 5px; margin-bottom: 12px;
-        }
+        .number-input-group { display: flex; align-items: center; gap: 5px; margin-bottom: 12px; }
         .num-btn {
             width: 36px; height: 36px; border-radius: 8px; border: 1px solid #ddd;
             background: #f9f9f9; font-size: 20px; display: flex; align-items: center; justify-content: center;
         }
-        .num-field { margin-bottom: 0 !important; text-align: center; flex: 1; }
+        .num-field { margin-bottom: 0 !important; text-align: center; flex: 1; border: 1px solid #ddd; padding: 8px; border-radius: 8px; }
 
         .flex-row { display: flex; gap: 8px; width: 100%; }
         .flex-item { flex: 1; }
         .add-btn { background-color: var(--primary-color); color: white; border: none; font-weight: bold; width: 100%; padding: 14px; border-radius: 8px; margin-top: 5px; }
 
+        /* リスト表示 */
         .category-header {
             padding: 12px 20px; color: var(--text-secondary); font-size: 14px; font-weight: 600;
             display: flex; justify-content: space-between; align-items: center; cursor: pointer;
@@ -108,9 +104,10 @@
         .item-name { font-weight: bold; font-size: 17px; }
         .item-tag { font-size: 10px; background: #E5E5EA; color: #666; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
         .item-meta { font-size: 12px; color: #888; margin-top: 6px; }
-        .editable { border-bottom: 1px dashed #ccc; }
+        .editable { border-bottom: 1px dashed #ccc; padding-bottom: 1px; }
         .expiry-alert { color: var(--danger-color) !important; font-weight: bold; }
 
+        /* 数量・補充操作 */
         .qty-controls { display: flex; align-items: center; gap: 10px; }
         .qty-btn-v2 {
             width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--primary-color);
@@ -118,8 +115,11 @@
             display: flex; align-items: center; justify-content: center;
         }
         .qty-val { font-size: 18px; font-weight: bold; min-width: 20px; text-align: center; }
+
+        /* 買い物リスト用 */
         .bought-btn { background-color: var(--success-color); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; }
 
+        /* フッター */
         .bottom-nav {
             position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.9);
             display: flex; border-top: 1px solid #ccc; height: 75px; backdrop-filter: blur(10px);
@@ -134,13 +134,15 @@
             height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; visibility: hidden;
         }
 
-        #custom-selector {
+        /* 共通セレクター・ポップアップ */
+        .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 3000; display: none;
             align-items: center; justify-content: center;
         }
-        .selector-content { background: white; width: 80%; border-radius: 15px; padding: 20px; }
-        .selector-option { padding: 15px; border-bottom: 1px solid #eee; text-align: center; color: var(--primary-color); font-size: 17px; }
+        .modal-content { background: white; width: 80%; border-radius: 15px; padding: 20px; text-align: center; }
+        .modal-title { font-size: 16px; margin-bottom: 20px; color: #333; font-weight: bold; }
+        .selector-option { padding: 15px; border-bottom: 1px solid #eee; color: var(--primary-color); font-size: 17px; }
 
         .page { display: none; }
         .page.active { display: block; }
@@ -159,14 +161,27 @@
         <div class="menu-item" onclick="importData()">📥 データを復元</div>
     </div>
 
-    <div id="custom-selector" onclick="closeSelector()">
-        <div class="selector-content" onclick="event.stopPropagation()">
-            <div class="selector-option" onclick="applyNewTag('生鮮')">生鮮</div>
-            <div class="selector-option" onclick="applyNewTag('冷凍')">冷凍</div>
-            <div class="selector-option" onclick="applyNewTag('常備')">常備</div>
-            <div class="selector-option" onclick="applyNewTag('調味料')">調味料</div>
-            <div class="selector-option" onclick="applyNewTag('')" style="color:#888;">なし</div>
-            <div class="selector-option" onclick="closeSelector()" style="color:var(--danger-color); font-weight:bold;">キャンセル</div>
+    <div id="tagSelector" class="modal-overlay" onclick="closeModals()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-title">タグを変更</div>
+            <div class="selector-option" onclick="applyTag('生鮮')">生鮮</div>
+            <div class="selector-option" onclick="applyTag('冷凍')">冷凍</div>
+            <div class="selector-option" onclick="applyTag('常備')">常備</div>
+            <div class="selector-option" onclick="applyTag('調味料')">調味料</div>
+            <div class="selector-option" onclick="applyTag('')" style="color:#888;">なし</div>
+            <div class="selector-option" onclick="closeModals()" style="color:var(--danger-color); font-weight:bold; border:none;">キャンセル</div>
+        </div>
+    </div>
+
+    <div id="thresholdModal" class="modal-overlay" onclick="closeModals()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-title" id="thresholdModalTitle">補充ラインの調整</div>
+            <div class="number-input-group" style="justify-content:center; margin-bottom: 30px;">
+                <button class="num-btn" style="width:50px; height:50px;" onclick="stepEditThreshold(-1)">−</button>
+                <div id="editThresholdDisplay" style="font-size: 24px; font-weight: bold; width: 100px;">1</div>
+                <button class="num-btn" style="width:50px; height:50px;" onclick="stepEditThreshold(1)">＋</button>
+            </div>
+            <button class="add-btn" onclick="closeModals()">完了</button>
         </div>
     </div>
 
@@ -214,16 +229,16 @@
                     <span class="input-label">個数</span>
                     <div class="number-input-group">
                         <button class="num-btn" onclick="stepInput('newQty', -1)">−</button>
-                        <input type="number" id="newQty" class="num-field" value="1">
+                        <input type="number" id="newQty" class="num-field" value="1" readonly>
                         <button class="num-btn" onclick="stepInput('newQty', 1)">＋</button>
                     </div>
                 </div>
                 <div class="flex-item">
                     <span class="input-label">補充ライン</span>
                     <div class="number-input-group">
-                        <button class="num-btn" onclick="stepThreshold(-1)">−</button>
+                        <button class="num-btn" onclick="stepNewThreshold(-1)">−</button>
                         <input type="text" id="newThreshold" class="num-field" value="1" readonly>
-                        <button class="num-btn" onclick="stepThreshold(1)">＋</button>
+                        <button class="num-btn" onclick="stepNewThreshold(1)">＋</button>
                     </div>
                 </div>
             </div>
@@ -257,7 +272,7 @@
     <script>
         let items = JSON.parse(localStorage.getItem('myStockData')) || [];
         let collapsedCats = JSON.parse(localStorage.getItem('collapsedCats')) || [];
-        let editingItemId = null;
+        let activeItemId = null;
         const CATEGORIES = ["冷蔵庫", "パントリー", "お風呂", "キッチン", "トイレ", "その他"];
 
         function toggleMenu() {
@@ -266,10 +281,7 @@
             if (menu.classList.contains('open')) {
                 menu.classList.remove('open');
                 overlay.style.display = 'none';
-            } else {
-                menu.classList.add('open');
-                overlay.style.display = 'block';
-            }
+            } else { menu.classList.add('open'); overlay.style.display = 'block'; }
         }
 
         function toggleSearch() {
@@ -278,58 +290,59 @@
                 area.style.display = 'none';
                 document.getElementById('searchBar').value = '';
                 renderInventory();
-            } else {
-                area.style.display = 'block';
-                document.getElementById('searchBar').focus();
-            }
+            } else { area.style.display = 'block'; document.getElementById('searchBar').focus(); }
         }
 
+        function closeModals() {
+            document.getElementById('tagSelector').style.display = 'none';
+            document.getElementById('thresholdModal').style.display = 'none';
+            activeItemId = null;
+        }
+
+        // --- 追加画面用のステップ ---
         function stepInput(id, delta) {
             const input = document.getElementById(id);
             let val = parseInt(input.value) || 0;
             input.value = Math.max(0, val + delta);
         }
-
-        // 補充ライン専用のステップ関数
-        function stepThreshold(delta) {
+        function stepNewThreshold(delta) {
             const input = document.getElementById('newThreshold');
             let val = input.value === "なし" ? -1 : parseInt(input.value);
             let newVal = val + delta;
-            if (newVal < 0) {
-                input.value = "なし";
-            } else {
-                input.value = newVal;
-            }
+            input.value = newVal < 0 ? "なし" : newVal;
         }
 
-        function exportData() {
-            const dataStr = JSON.stringify(items);
-            navigator.clipboard.writeText(dataStr).then(() => {
-                alert("データをコピーしました。");
-                toggleMenu();
-            });
+        // --- リスト編集用：補充ライン調整 ---
+        function openThresholdEdit(id) {
+            activeItemId = id;
+            const item = items.find(x => x.id === id);
+            document.getElementById('thresholdModalTitle').innerText = `${item.name} の補充ライン`;
+            updateThresholdDisplay(item.threshold);
+            document.getElementById('thresholdModal').style.display = 'flex';
+        }
+        function stepEditThreshold(delta) {
+            const item = items.find(x => x.id === activeItemId);
+            if (!item) return;
+            let val = item.threshold;
+            let newVal = val + delta;
+            item.threshold = newVal < -1 ? -1 : newVal;
+            updateThresholdDisplay(item.threshold);
+            saveData();
+            renderInventory();
+        }
+        function updateThresholdDisplay(val) {
+            document.getElementById('editThresholdDisplay').innerText = val === -1 ? "なし" : val;
         }
 
-        function importData() {
-            const dataStr = prompt("保存したデータを貼り付けてください");
-            if (dataStr) {
-                try {
-                    items = JSON.parse(dataStr);
-                    saveData(); renderInventory();
-                    alert("復元しました！");
-                    toggleMenu();
-                } catch (e) { alert("不正なデータです。"); }
-            }
+        // --- リスト編集用：タグ変更 ---
+        function openTagEdit(id) {
+            activeItemId = id;
+            document.getElementById('tagSelector').style.display = 'flex';
         }
-
-        function updateBadge() {
-            // thresholdが-1(なし)でない、かつqty <= thresholdのものだけカウント
-            const count = items.filter(i => i.threshold !== -1 && Number(i.qty) <= Number(i.threshold)).length;
-            const badge = document.getElementById('shopping-badge');
-            if (count > 0) {
-                badge.innerText = count;
-                badge.style.visibility = 'visible';
-            } else { badge.style.visibility = 'hidden'; }
+        function applyTag(tagName) {
+            const item = items.find(x => x.id === activeItemId);
+            if(item) { item.tag = tagName; saveData(); renderInventory(); }
+            closeModals();
         }
 
         function renderInventory() {
@@ -357,14 +370,14 @@
                     if (!collapsed) {
                         filtered.forEach(i => {
                             let expStyle = (i.expiry && new Date(i.expiry).getTime() <= limit.getTime()) ? 'expiry-alert' : '';
+                            const threshDisp = i.threshold === -1 ? "なし" : i.threshold + "個以下";
                             const card = document.createElement('div');
                             card.className = 'item-card';
-                            const threshDisp = i.threshold === -1 ? "なし" : i.threshold + "個以下";
                             card.innerHTML = `
                                 <div class="item-info">
                                     <span class="item-name editable" onclick="editName(${i.id})">${i.name}</span>
-                                    <span class="item-tag" onclick="openTagSelector(${i.id})">${i.tag || '＋タグ'}</span>
-                                    <div class="item-meta">補充: <span onclick="editThreshold(${i.id})" class="editable">${threshDisp}</span> / 期限: <span onclick="editExpiry(${i.id})" class="editable ${expStyle}">${i.expiry || '未設定'}</span></div>
+                                    <span class="item-tag" onclick="openTagEdit(${i.id})">${i.tag || '＋タグ'}</span>
+                                    <div class="item-meta">補充: <span onclick="openThresholdEdit(${i.id})" class="editable">${threshDisp}</span> / 期限: <span onclick="editExpiry(${i.id})" class="editable ${expStyle}">${i.expiry || '未設定'}</span></div>
                                     <button class="delete-btn" onclick="deleteItem(${i.id})">削除</button>
                                 </div>
                                 <div class="qty-controls">
@@ -385,8 +398,7 @@
             if(!name) return;
             const threshVal = document.getElementById('newThreshold').value;
             items.push({
-                id: Date.now(),
-                name: name,
+                id: Date.now(), name: name,
                 category: document.getElementById('newCategory').value,
                 tag: document.getElementById('newTag').value,
                 qty: parseInt(document.getElementById('newQty').value) || 0,
@@ -403,23 +415,23 @@
             if(i) { i.qty = Math.max(0, Number(i.qty) + delta); saveData(); renderInventory(); }
         }
 
-        function openTagSelector(id) { editingItemId = id; document.getElementById('custom-selector').style.display='flex'; }
-        function closeSelector() { document.getElementById('custom-selector').style.display='none'; }
-        function applyNewTag(t) { const i = items.find(x => x.id === editingItemId); if(i){i.tag=t; saveData(); renderInventory();} closeSelector(); }
         function editName(id) { const i = items.find(x => x.id === id); const n = prompt("名前", i.name); if(n){i.name=n; saveData(); renderInventory();} }
-        
-        function editThreshold(id) {
-            const i = items.find(x => x.id === id);
-            const v = prompt("補充ラインを入力（なしにする場合は -1）", i.threshold);
-            if(v!==null){
-                i.threshold = parseInt(v);
-                saveData(); renderInventory();
-            }
-        }
-
         function editExpiry(id) { const i = items.find(x => x.id === id); const d = prompt("期限 (YYYY-MM-DD)", i.expiry); if(d!==null){i.expiry=d; saveData(); renderInventory();} }
         function deleteItem(id) { if(confirm("削除しますか？")){items=items.filter(x=>x.id!==id); saveData(); renderInventory();} }
         function saveData() { localStorage.setItem('myStockData', JSON.stringify(items)); }
+        
+        function exportData() { navigator.clipboard.writeText(JSON.stringify(items)).then(() => alert("コピーしました。")); toggleMenu(); }
+        function importData() { 
+            const s = prompt("データを貼り付け"); 
+            if(s){ try{ items=JSON.parse(s); saveData(); renderInventory(); alert("復元完了"); toggleMenu(); }catch(e){alert("失敗");} }
+        }
+
+        function updateBadge() {
+            const count = items.filter(i => i.threshold !== -1 && Number(i.qty) <= Number(i.threshold)).length;
+            const badge = document.getElementById('shopping-badge');
+            badge.innerText = count;
+            badge.style.visibility = count > 0 ? 'visible' : 'hidden';
+        }
 
         function switchPage(pid) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -433,9 +445,8 @@
         function renderShoppingList() {
             const list = document.getElementById('shopping-list');
             list.innerHTML = '';
-            // thresholdが-1でないものだけを表示
             const sItems = items.filter(i => i.threshold !== -1 && Number(i.qty) <= Number(i.threshold));
-            if(sItems.length === 0) { list.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">買うものはありません</div>'; }
+            if(sItems.length === 0) list.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">買うものはありません</div>';
             sItems.forEach(i => {
                 const card = document.createElement('div');
                 card.className = 'item-card';
