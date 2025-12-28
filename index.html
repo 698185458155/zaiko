@@ -26,7 +26,6 @@
             overflow-x: hidden;
         }
         
-        /* ヘッダー */
         .page-header {
             position: sticky; top: 0; z-index: 100;
             background: #fff; border-bottom: 1px solid #ddd;
@@ -39,7 +38,6 @@
         }
         h1 { margin: 0; font-size: 18px; font-weight: 600; color: #333; }
 
-        /* サイドメニュー */
         .side-menu {
             position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
             background: #fff; z-index: 2000; transition: 0.3s;
@@ -60,10 +58,9 @@
             display: flex; align-items: center; gap: 10px; font-size: 15px; cursor: pointer;
         }
 
-        /* 検索バー (初期状態は非表示) */
         .search-area {
             background: #fff; padding: 10px 15px; border-bottom: 1px solid #ddd;
-            display: none; /* 最初は隠す */
+            display: none;
             animation: slideDown 0.2s ease-out;
         }
         @keyframes slideDown {
@@ -75,7 +72,6 @@
             border-radius: 10px; font-size: 14px; box-sizing: border-box;
         }
 
-        /* 入力エリア */
         .input-area {
             background: var(--card-bg); padding: 15px; margin: 15px;
             border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
@@ -100,7 +96,6 @@
         .flex-item { flex: 1; }
         .add-btn { background-color: var(--primary-color); color: white; border: none; font-weight: bold; width: 100%; padding: 14px; border-radius: 8px; margin-top: 5px; }
 
-        /* リスト */
         .category-header {
             padding: 12px 20px; color: var(--text-secondary); font-size: 14px; font-weight: 600;
             display: flex; justify-content: space-between; align-items: center; cursor: pointer;
@@ -116,7 +111,6 @@
         .editable { border-bottom: 1px dashed #ccc; }
         .expiry-alert { color: var(--danger-color) !important; font-weight: bold; }
 
-        /* 操作ボタン */
         .qty-controls { display: flex; align-items: center; gap: 10px; }
         .qty-btn-v2 {
             width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--primary-color);
@@ -126,7 +120,6 @@
         .qty-val { font-size: 18px; font-weight: bold; min-width: 20px; text-align: center; }
         .bought-btn { background-color: var(--success-color); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; }
 
-        /* フッター */
         .bottom-nav {
             position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.9);
             display: flex; border-top: 1px solid #ccc; height: 75px; backdrop-filter: blur(10px);
@@ -228,9 +221,9 @@
                 <div class="flex-item">
                     <span class="input-label">補充ライン</span>
                     <div class="number-input-group">
-                        <button class="num-btn" onclick="stepInput('newThreshold', -1)">−</button>
-                        <input type="number" id="newThreshold" class="num-field" value="1">
-                        <button class="num-btn" onclick="stepInput('newThreshold', 1)">＋</button>
+                        <button class="num-btn" onclick="stepThreshold(-1)">−</button>
+                        <input type="text" id="newThreshold" class="num-field" value="1" readonly>
+                        <button class="num-btn" onclick="stepThreshold(1)">＋</button>
                     </div>
                 </div>
             </div>
@@ -244,7 +237,8 @@
 
     <div id="page-shopping" class="page">
         <div class="page-header">
-            <div style="width:40px;"></div> <h1>Shopping List</h1>
+            <div style="width:40px;"></div>
+            <h1>Shopping List</h1>
             <div style="width:40px;"></div>
         </div>
         <div id="shopping-list" style="padding-top: 15px;"></div>
@@ -266,7 +260,6 @@
         let editingItemId = null;
         const CATEGORIES = ["冷蔵庫", "パントリー", "お風呂", "キッチン", "トイレ", "その他"];
 
-        // メニュー開閉
         function toggleMenu() {
             const menu = document.getElementById('sideMenu');
             const overlay = document.getElementById('menuOverlay');
@@ -279,34 +272,44 @@
             }
         }
 
-        // 検索バー開閉
         function toggleSearch() {
             const area = document.getElementById('searchArea');
             if (area.style.display === 'block') {
                 area.style.display = 'none';
-                document.getElementById('searchBar').value = ''; // 閉じたらリセット
-                renderInventory(); // リストも全表示に戻す
+                document.getElementById('searchBar').value = '';
+                renderInventory();
             } else {
                 area.style.display = 'block';
-                document.getElementById('searchBar').focus(); // 開いたらフォーカス
+                document.getElementById('searchBar').focus();
             }
         }
 
-        // 数値入力ステップ
         function stepInput(id, delta) {
             const input = document.getElementById(id);
             let val = parseInt(input.value) || 0;
             input.value = Math.max(0, val + delta);
         }
 
-        // バックアップ・復元
+        // 補充ライン専用のステップ関数
+        function stepThreshold(delta) {
+            const input = document.getElementById('newThreshold');
+            let val = input.value === "なし" ? -1 : parseInt(input.value);
+            let newVal = val + delta;
+            if (newVal < 0) {
+                input.value = "なし";
+            } else {
+                input.value = newVal;
+            }
+        }
+
         function exportData() {
             const dataStr = JSON.stringify(items);
             navigator.clipboard.writeText(dataStr).then(() => {
-                alert("データをコピーしました。メモ帳に保存してください。");
+                alert("データをコピーしました。");
                 toggleMenu();
             });
         }
+
         function importData() {
             const dataStr = prompt("保存したデータを貼り付けてください");
             if (dataStr) {
@@ -320,7 +323,8 @@
         }
 
         function updateBadge() {
-            const count = items.filter(i => Number(i.qty) <= Number(i.threshold)).length;
+            // thresholdが-1(なし)でない、かつqty <= thresholdのものだけカウント
+            const count = items.filter(i => i.threshold !== -1 && Number(i.qty) <= Number(i.threshold)).length;
             const badge = document.getElementById('shopping-badge');
             if (count > 0) {
                 badge.innerText = count;
@@ -338,16 +342,11 @@
             CATEGORIES.forEach(cat => {
                 let filtered = items.filter(i => i.category === cat && (i.name.toLowerCase().includes(q) || (i.tag || "").toLowerCase().includes(q)));
                 if (filtered.length > 0) {
-                    filtered.sort((a,b) => {
-                         const dateA = a.expiry ? new Date(a.expiry).getTime() : Infinity;
-                         const dateB = b.expiry ? new Date(b.expiry).getTime() : Infinity;
-                         return dateA - dateB;
-                    });
+                    filtered.sort((a,b) => (a.expiry || 'z') > (b.expiry || 'z') ? 1 : -1);
                     const collapsed = collapsedCats.includes(cat);
-                    const hasUrgent = filtered.some(i => i.expiry && new Date(i.expiry).getTime() <= limit.getTime());
                     const header = document.createElement('div');
                     header.className = 'category-header';
-                    header.innerHTML = `<div class="cat-title-area"><span>${cat} (${filtered.length})</span>${(collapsed && hasUrgent) ? '<span class="warning-icon">⚠️</span>' : ''}</div><span>${collapsed ? '▶' : '▼'}</span>`;
+                    header.innerHTML = `<span>${cat} (${filtered.length})</span><span>${collapsed ? '▶' : '▼'}</span>`;
                     header.onclick = () => {
                         if(collapsed) { collapsedCats = collapsedCats.filter(c=>c!==cat); } else { collapsedCats.push(cat); }
                         localStorage.setItem('collapsedCats', JSON.stringify(collapsedCats));
@@ -360,11 +359,12 @@
                             let expStyle = (i.expiry && new Date(i.expiry).getTime() <= limit.getTime()) ? 'expiry-alert' : '';
                             const card = document.createElement('div');
                             card.className = 'item-card';
+                            const threshDisp = i.threshold === -1 ? "なし" : i.threshold + "個以下";
                             card.innerHTML = `
                                 <div class="item-info">
                                     <span class="item-name editable" onclick="editName(${i.id})">${i.name}</span>
                                     <span class="item-tag" onclick="openTagSelector(${i.id})">${i.tag || '＋タグ'}</span>
-                                    <div class="item-meta">補充: <span onclick="editThreshold(${i.id})" class="editable">${i.threshold}個以下</span> / 期限: <span onclick="editExpiry(${i.id})" class="editable ${expStyle}">${i.expiry || '未設定'}</span></div>
+                                    <div class="item-meta">補充: <span onclick="editThreshold(${i.id})" class="editable">${threshDisp}</span> / 期限: <span onclick="editExpiry(${i.id})" class="editable ${expStyle}">${i.expiry || '未設定'}</span></div>
                                     <button class="delete-btn" onclick="deleteItem(${i.id})">削除</button>
                                 </div>
                                 <div class="qty-controls">
@@ -383,17 +383,19 @@
         function addItem() {
             const name = document.getElementById('newName').value;
             if(!name) return;
+            const threshVal = document.getElementById('newThreshold').value;
             items.push({
                 id: Date.now(),
                 name: name,
                 category: document.getElementById('newCategory').value,
                 tag: document.getElementById('newTag').value,
                 qty: parseInt(document.getElementById('newQty').value) || 0,
-                threshold: parseInt(document.getElementById('newThreshold').value) || 0,
+                threshold: threshVal === "なし" ? -1 : parseInt(threshVal),
                 expiry: document.getElementById('newExpiry').value
             });
             saveData(); renderInventory();
             document.getElementById('newName').value = '';
+            document.getElementById('newThreshold').value = '1';
         }
 
         function changeQty(id, delta) {
@@ -405,7 +407,16 @@
         function closeSelector() { document.getElementById('custom-selector').style.display='none'; }
         function applyNewTag(t) { const i = items.find(x => x.id === editingItemId); if(i){i.tag=t; saveData(); renderInventory();} closeSelector(); }
         function editName(id) { const i = items.find(x => x.id === id); const n = prompt("名前", i.name); if(n){i.name=n; saveData(); renderInventory();} }
-        function editThreshold(id) { const i = items.find(x => x.id === id); const v = prompt("補充ライン", i.threshold); if(v!==null){i.threshold=parseInt(v)||0; saveData(); renderInventory();} }
+        
+        function editThreshold(id) {
+            const i = items.find(x => x.id === id);
+            const v = prompt("補充ラインを入力（なしにする場合は -1）", i.threshold);
+            if(v!==null){
+                i.threshold = parseInt(v);
+                saveData(); renderInventory();
+            }
+        }
+
         function editExpiry(id) { const i = items.find(x => x.id === id); const d = prompt("期限 (YYYY-MM-DD)", i.expiry); if(d!==null){i.expiry=d; saveData(); renderInventory();} }
         function deleteItem(id) { if(confirm("削除しますか？")){items=items.filter(x=>x.id!==id); saveData(); renderInventory();} }
         function saveData() { localStorage.setItem('myStockData', JSON.stringify(items)); }
@@ -422,7 +433,8 @@
         function renderShoppingList() {
             const list = document.getElementById('shopping-list');
             list.innerHTML = '';
-            const sItems = items.filter(i => Number(i.qty) <= Number(i.threshold));
+            // thresholdが-1でないものだけを表示
+            const sItems = items.filter(i => i.threshold !== -1 && Number(i.qty) <= Number(i.threshold));
             if(sItems.length === 0) { list.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">買うものはありません</div>'; }
             sItems.forEach(i => {
                 const card = document.createElement('div');
